@@ -172,6 +172,17 @@ async function createChar(name){
 const H = {
   login: async () => {
     busy = true; render();
+    // Сначала спрашиваем Supabase, включён ли Discord: иначе мастер увидит сырую ошибку на чужой странице
+    try {
+      const r = await fetch(`${cfg.supabaseUrl}/auth/v1/settings`, { headers: { apikey: cfg.supabaseKey } });
+      const settings = await r.json();
+      if (!settings?.external?.discord){
+        busy = false;
+        error = "Вход через Discord пока выключен в Supabase. Владелец сайта должен включить его: Authentication → Sign In / Providers → Discord.";
+        render();
+        return;
+      }
+    } catch (e) { /* не получилось спросить — пробуем войти как есть */ }
     const { error: e } = await sb.auth.signInWithOAuth({
       provider: "discord",
       options: { redirectTo: location.origin + "/" }
