@@ -127,6 +127,68 @@ h2{font-family:var(--f-head);font-weight:500;font-size:20px;line-height:1.15;let
   padding:8px;border-radius:26px;background:color-mix(in srgb,var(--bg) 82%,transparent);backdrop-filter:blur(14px);-webkit-backdrop-filter:blur(14px)}
 .savebar .btn[disabled]{cursor:not-allowed}
 
+/* Новый персонаж: четыре дороги */
+.ways{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px}
+.way{position:relative;display:flex;flex-direction:column;align-items:flex-start;gap:4px;min-width:0;padding:14px 14px 16px;border:0;border-radius:20px;
+  background:var(--neutral);color:var(--fg);text-align:left;font:inherit;cursor:pointer;transition:background-color .15s}
+.way:hover{background:color-mix(in srgb,var(--accent) 12%,var(--neutral))}
+.way:active{transform:scale(.98)}
+.way svg.i{width:26px;height:26px;margin-bottom:6px;color:var(--accent-ink)}
+.way b{font-weight:600;font-size:15.5px;line-height:1.25}
+.way span{font-size:13px;line-height:1.35;color:var(--fg-3)}
+.way input{position:absolute;inset:0;opacity:0;width:100%;cursor:pointer}
+.linkbtn{background:none;border:0;padding:0;font:inherit;color:var(--accent-ink);cursor:pointer}
+
+/* Конструктор: плашки выбора */
+.pick{display:flex;flex-wrap:wrap;gap:6px}
+.pick.sub{padding-top:2px}
+.pk{display:inline-flex;align-items:baseline;gap:6px;min-height:40px;padding:8px 14px;border:0;border-radius:14px;background:var(--surface);box-shadow:var(--shadow);
+  color:var(--fg);font-family:var(--f-btn);font-weight:600;font-size:14px;letter-spacing:-.1px;cursor:pointer}
+.pk small{font-family:var(--f-body);font-weight:500;font-size:12px;color:var(--fg-3)}
+.pk[aria-pressed="true"]{background:var(--accent);color:var(--on-accent);box-shadow:none}
+.pk[aria-pressed="true"] small{color:color-mix(in srgb,var(--on-accent) 75%,transparent)}
+.pk:active{transform:scale(.97)}
+.pk.locked{background:transparent;box-shadow:inset 0 0 0 1.5px var(--line);color:var(--fg-3);cursor:default}
+.pick-h{display:flex;align-items:center;justify-content:space-between;gap:12px;margin-top:6px}
+.pick-h b{font-weight:600;font-size:15px}
+.pick-l{font-size:13px;color:var(--fg-3);margin:2px 0 -4px}
+.cnt{flex:none;padding:3px 10px;border-radius:999px;background:var(--neutral);font-size:12.5px;font-weight:500;color:var(--fg-3)}
+.cnt.full{background:color-mix(in srgb,var(--accent) 16%,transparent);color:var(--accent-ink)}
+.cr-box{padding:18px 20px 20px;display:flex;flex-direction:column;gap:14px}
+.fld-row{display:flex;gap:8px}
+.fld-row input{flex:1}
+.abls{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px}
+.abl{display:grid;grid-template-columns:auto 1fr;grid-template-areas:"n m" "i i" "b b";align-items:center;gap:6px 8px;padding:12px;min-width:0}
+.abl-n{grid-area:n;font-size:12.5px;font-weight:600;letter-spacing:.04em;color:var(--fg-3)}
+.abl-m{grid-area:m;justify-self:end;font-family:var(--f-head);font-weight:600;font-size:17px}
+.abl input{grid-area:i;width:100%;min-width:0;height:44px;padding:0 10px;border:0;border-radius:12px;background:var(--neutral);color:var(--fg);
+  font-family:var(--f-head);font-weight:600;font-size:18px;text-align:center}
+.abl-b{grid-area:b;font-size:12.5px;color:var(--fg-3);text-align:center}
+.sels{display:flex;flex-wrap:wrap;align-items:center;gap:8px}
+.mini-sel{display:inline-flex;align-items:center;gap:6px;font-size:14px;color:var(--fg-2)}
+.mini-sel select{height:40px;padding:0 10px;border:0;border-radius:12px;background:var(--surface);box-shadow:var(--shadow);color:var(--fg);font:inherit;font-size:14px}
+.cr-sum{padding:18px 20px 20px;display:flex;flex-direction:column;gap:12px}
+.sum-h{display:flex;align-items:baseline;justify-content:space-between;gap:10px;flex-wrap:wrap}
+.sum-h h3{font-family:var(--f-head);font-weight:500;font-size:19px;letter-spacing:-.4px}
+.sum-tiles{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:6px}
+@media (max-width:420px){ .sum-tiles{grid-template-columns:repeat(2,minmax(0,1fr))} }
+.sum-tiles span{display:flex;flex-direction:column;gap:2px;padding:10px;border-radius:14px;background:var(--neutral);min-width:0}
+.sum-tiles small{font-size:11.5px;color:var(--fg-3);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.sum-tiles b{font-family:var(--f-head);font-weight:600;font-size:20px}
+.sum-list{list-style:none;margin:0;padding:0;display:flex;flex-direction:column}
+.sum-list li{display:flex;justify-content:space-between;gap:12px;padding:8px 0;border-top:1px solid var(--line);font-size:14.5px}
+.sum-list b{font-family:var(--f-head);font-weight:600;font-size:14.5px;white-space:nowrap}
+.cr-sum .btn{align-self:flex-start}
+
+/* Шаблоны */
+.tpls{display:flex;flex-direction:column;gap:10px}
+.tpl{padding:18px 20px;display:flex;flex-direction:column;gap:10px}
+.tpl-h{display:flex;align-items:baseline;justify-content:space-between;gap:10px;flex-wrap:wrap}
+.tpl-h h3{font-family:var(--f-head);font-weight:500;font-size:19px;letter-spacing:-.4px}
+.tpl-pitch{font-size:15px;line-height:1.4;color:var(--fg-2)}
+.tpl-stats{display:flex;flex-wrap:wrap;gap:4px 14px;font-size:13.5px;color:var(--fg-3)}
+.tpl-stats b{font-family:var(--f-head);font-weight:600;color:var(--fg)}
+
 .toast-wrap{position:fixed;left:0;right:0;z-index:16;display:flex;justify-content:center;pointer-events:none;
   bottom:calc(16px + env(safe-area-inset-bottom,0px));
   padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px))}

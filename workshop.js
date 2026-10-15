@@ -5,6 +5,8 @@
    ============================================================ */
 import { createClient } from "https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.117.2/+esm";
 import { importLSS } from "/lss.js";
+import { CR, viewTemplates, viewBuild, createHandlers, createInput, createChange } from "/create.js";
+import { makeSpell } from "/builder.js";
 
 const cfg = window.APP_CONFIG;
 const sb = createClient(cfg.supabaseUrl, cfg.supabaseKey);
@@ -17,7 +19,7 @@ let loaded = false;     // список уже пришёл из базы
 let confirmDel = null;  // id персонажа, которого спрашиваем «удалить?»
 let busy = false;       // идёт запрос — кнопки на это время гаснут
 // Для списка не тянем лист целиком: только имя расы и класс. Бесплатный трафик Supabase — 5 ГБ в месяц.
-const LIST_COLS = "id,name,share_slug,updated_at,race:data->race->>name,cls:data->class";
+const LIST_COLS = "id,name,share_slug,updated_at,race:data->race->>name,cls:data->class,app:data->source->>app";
 let review = null;      // импорт из LSS на проверке: живёт только в браузере, пока мастер не нажмёт «Сохранить»
 let error = readAuthError();
 
@@ -78,7 +80,7 @@ function viewGuest(){
   </section>
   <section class="steps">
     <div class="step card"><b>Войди через Discord</b><p>Это твоя мастерская: здесь живут все твои персонажи.</p></div>
-    <div class="step card"><b>Создай персонажа</b><p>Пока из шаблона воина. Импорт из LSS и конструктор появятся следующими.</p></div>
+    <div class="step card"><b>Создай персонажа</b><p>Из готового шаблона в один клик, с нуля в конструкторе, случайно или из файла Long Story Short.</p></div>
     <div class="step card"><b>Отправь ссылку игроку</b><p>Он откроет лист с телефона, без регистрации.</p></div>
   </section>`;
 }
@@ -97,6 +99,7 @@ function charCard(c){
     : `<div class="char-acts">
          <a class="btn primary sm" href="/c/${esc(c.share_slug)}">Открыть</a>
          <button type="button" class="btn neutral sm" data-act="copy" data-id="${c.id}">Ссылка игроку</button>
+         ${(c.app ?? c.data?.source?.app) === "builder" ? `<button type="button" class="btn neutral sm" data-act="edit" data-id="${c.id}">Изменить</button>` : ""}
          <button type="button" class="btn sm del" data-act="askDel" data-id="${c.id}">Удалить</button>
        </div>`;
   return `<article class="char card">
@@ -118,22 +121,25 @@ function viewMaster(){
     <p class="eyebrow">Мастерская</p>
     <h1>Мои персонажи</h1>
   </section>
-  <form class="new card" id="newForm">
-    <h2>Новый персонаж</h2>
-    <div class="new-row">
-      <input id="newName" name="name" placeholder="Имя героя" maxlength="80" autocomplete="off" required>
-      <button type="submit" class="btn primary"${busy ? " disabled" : ""}>Создать</button>
-    </div>
-    <p class="meta">Пока персонаж создаётся из шаблона: полуорк-воин 1 уровня.</p>
-  </form>
   <section class="new card">
-    <h2>Импорт из Long Story Short</h2>
-    <p class="meta">Скачай персонажа из LSS файлом .json и выбери его здесь. Файл разбирается прямо в браузере, а перед сохранением ты увидишь, что нашлось и что стоит проверить.</p>
-    <label class="btn neutral filebtn"><input type="file" id="lssFile" accept=".json,application/json" hidden>Выбрать файл .json</label>
+    <h2>Новый персонаж</h2>
+    <div class="ways">
+      <button type="button" class="way" data-act="openTemplates">${WAY_ICONS.tpl}<b>Из шаблона</b><span>12 готовых героев, один клик</span></button>
+      <button type="button" class="way" data-act="openBuild">${WAY_ICONS.build}<b>С нуля</b><span>Раса, класс и навыки по шагам</span></button>
+      <button type="button" class="way" data-act="openRandom">${WAY_ICONS.dice}<b>Случайный</b><span>Бросок судьбы: герой целиком</span></button>
+      <label class="way">${WAY_ICONS.file}<b>Из Long Story Short</b><span>Файл .json, проверка перед сохранением</span><input type="file" id="lssFile" accept=".json,application/json" hidden></label>
+    </div>
   </section>
   ${list}
   <p class="meta"><button type="button" class="btn surface sm" data-act="logout">Выйти</button></p>`;
 }
+
+const WAY_ICONS = {
+  tpl:   `<svg class="i" viewBox="0 0 24 24" aria-hidden="true"><rect x="4" y="4" width="7" height="7" rx="2"/><rect x="13" y="4" width="7" height="7" rx="2"/><rect x="4" y="13" width="7" height="7" rx="2"/><rect x="13" y="13" width="7" height="7" rx="2"/></svg>`,
+  build: `<svg class="i" viewBox="0 0 24 24" aria-hidden="true"><path d="M4 20h4L19 9l-4-4L4 16z"/><path d="M13.5 6.5l4 4"/></svg>`,
+  dice:  `<svg class="i" viewBox="0 0 24 24" aria-hidden="true"><rect x="4" y="4" width="16" height="16" rx="4"/><circle cx="9" cy="9" r="1.2"/><circle cx="15" cy="15" r="1.2"/><circle cx="15" cy="9" r="1.2"/><circle cx="9" cy="15" r="1.2"/></svg>`,
+  file:  `<svg class="i" viewBox="0 0 24 24" aria-hidden="true"><path d="M7 3h7l5 5v13H7z"/><path d="M14 3v5h5"/><path d="M10 14l2 2 3-4"/></svg>`
+};
 
 /* ---------- импорт: экран проверки ---------- */
 const KIND_LABEL = { action: "Действие", bonus: "Бонус", reaction: "Реакция", passive: "Само", item: "Вещь", drop: "Убрать" };
@@ -215,6 +221,7 @@ function viewReview(){
     ${feats.map(([f, i]) => featRow(f, i)).join("") || `<p class="meta">Способностей в файле не нашлось.</p>`}
   </section>
   ${weapons.length ? `<section class="sec"><div class="sec-h"><h2>Оружие</h2><p>Числа уже пересчитаны по характеристикам. Поправь, если у героя особый случай.</p></div>${weapons.map(([f, i]) => weaponRow(f, i)).join("")}</section>` : ""}
+  ${c.spellcasting ? reviewSpells() : ""}
   <section class="sec">
     <div class="sec-h"><h2>Снаряжение</h2><p>Нажми ×, чтобы убрать лишнее.</p></div>
     <div class="eqs">${c.equipment.map((e, i) => `<span class="eq card"><span><b>${esc(e.name)}</b>${e.note ? `<small>${esc(e.note)}</small>` : ""}</span><button type="button" data-act="eqDel" data-i="${i}" aria-label="Убрать ${esc(e.name)}">×</button></span>`).join("") || `<p class="meta">Пусто.</p>`}</div>
@@ -225,14 +232,34 @@ function viewReview(){
   </div>`;
 }
 
+// Заклинания для импортированного героя: список популярных у его класса до доступного круга
+function reviewSpells(){
+  const c = review.char, S = review.spl.spells;
+  const lists = review.spl.classes[c.class.id];
+  const maxSlot = Math.max(0, ...Object.keys(c.spellcasting.slots || {}).map(Number));
+  const upTo = Math.min(2, Math.max(1, maxSlot));
+  const ids = l => lists ? (lists[String(l)] || []) : Object.keys(S).filter(id => S[id].level === l);
+  const chip = id => `<button type="button" class="pk" data-act="rvSpell" data-v="${id}" aria-pressed="${review.spellIds.includes(id)}" title="${esc(S[id].plain.replace(/\[\[[a-z0-9-]+\|([^\]]+)\]\]/g, "$1").replace(/\{\{([^|]*)\|[^}]*\}\}/g, ""))}">${esc(S[id].name)}</button>`;
+  const groups = [0, 1, 2].filter(l => l <= upTo).map(l => {
+    const list = ids(l);
+    return list.length ? `<p class="pick-l">${l ? `${l} круг` : "Заговоры"}</p><div class="pick">${list.map(chip).join("")}</div>` : "";
+  }).join("");
+  const slots = Object.entries(c.spellcasting.slots || {}).map(([l, n]) => `${n} × ${l} круг`).join(", ");
+  return `<section class="sec">
+    <div class="sec-h"><h2>Заклинания</h2><p>Отметь, что знает герой. В LSS выбраны заклинания, но в файле только их номера, поэтому отмечаем вручную. Ячейки из файла: ${slots || "нет"}. Атака заклинанием ${c.spellcasting.attack >= 0 ? "+" : ""}${c.spellcasting.attack}, сложность ${c.spellcasting.dc}.${maxSlot > 2 ? " Заклинаний 3 круга и выше в справочнике пока нет." : ""}</p></div>
+    <div class="pick-h"><b>Выбрано</b><span class="cnt">${review.spellIds.length}</span></div>
+    ${groups || `<p class="meta">Для этого класса списка нет.</p>`}
+  </section>`;
+}
+
 async function startImport(file){
   try {
     const raw = JSON.parse(await file.text());
-    const [kb, dict] = await Promise.all(["/data/knowledge.json", "/data/dictionary.json"].map(u => fetch(u).then(r => r.json())));
+    const [kb, dict, spl] = await Promise.all(["/data/knowledge.json", "/data/dictionary.json", "/data/spells.json"].map(u => fetch(u).then(r => r.json())));
     const { character, findings } = importLSS(raw, { kb, dict });
     // по каждой находке с выбором сразу применяем первый вариант — это рекомендация
     for (const f of findings) if (f.options){ f.options[0].apply(character); f.chosen = 0; }
-    review = { fileName: file.name, char: character, findings };
+    review = { fileName: file.name, char: character, findings, spl, spellIds: [] };
     error = "";
   } catch (e){
     console.error(e);
@@ -255,6 +282,12 @@ async function saveImport(){
   }
   const ids = new Set(c.features.map(f => f.id));
   c.features = c.features.filter(f => !f.attackRef || ids.has(f.attackRef));
+  if (c.spellcasting){
+    const m = c.spellcasting.attack - c.proficiencyBonus;
+    const agon = c.features.some(f => /мучительн/i.test(f.name)) ? Math.floor((c.abilities.cha - 10) / 2) : 0;
+    c.spells = review.spellIds.map(id => makeSpell(review.spl, id, { m, pb: c.proficiencyBonus, she: c.pronoun === "she", agonizing: agon })).filter(Boolean);
+    if (!c.spells.length && !Object.keys(c.spellcasting.slots || {}).length){ delete c.spells; delete c.spellcasting; }
+  }
   const json = JSON.stringify(c);
   const size = new TextEncoder().encode(json).length;
   if (size > 150000){ toast("Персонаж слишком большой для бесплатной базы. Убери длинные описания и попробуй ещё раз."); return; }
@@ -272,14 +305,11 @@ async function saveImport(){
 const setPath = (obj, path, val) => { const ks = path.split("."); let o = obj; for (let i = 0; i < ks.length - 1; i++) o = o[ks[i]]; o[ks[ks.length - 1]] = val; };
 
 function render(){
-  const keepName = document.getElementById("newName")?.value || "";
   app.innerHTML = `
     ${header()}
     ${error ? `<div class="alert" role="alert">${esc(error)}</div>` : ""}
-    ${!session ? viewGuest() : review ? viewReview() : viewMaster()}
-    <footer class="foot">Правила D&amp;D 5e (2014). Часть материалов взята из System Reference Document 5.1 © Wizards of the Coast LLC, лицензия CC-BY-4.0.</footer>`;
-  const input = document.getElementById("newName");
-  if (input) input.value = keepName;
+    ${!session ? viewGuest() : review ? viewReview() : CR.mode === "templates" ? viewTemplates(ctx) : CR.mode === "build" ? viewBuild(ctx) : viewMaster()}
+    <footer class="foot">Правила D&amp;D 5e (2014). Часть материалов взята из System Reference Document 5.1 © Wizards of the Coast LLC, лицензия CC-BY-4.0. Популярность заклинаний — по данным D&amp;D Beyond.</footer>`;
 }
 
 /* ---------- работа с базой ---------- */
@@ -293,25 +323,32 @@ async function loadChars(){
   render();
 }
 
-async function createChar(name){
+// Сохранить готовый лист: новый — вставкой, правку — обновлением той же строки (ссылка игрока не меняется)
+async function saveCharacter(c, editId){
+  const size = new TextEncoder().encode(JSON.stringify(c)).length;
+  if (size > 150000){ toast("Персонаж слишком большой для бесплатной базы."); return false; }
   busy = true; render();
-  try {
-    const tpl = await (await fetch("/data/mirta.json")).json();
-    tpl.name = name;
-    const { data, error: e } = await sb.from("characters")
-      .insert({ name, data: tpl })
-      .select(LIST_COLS)
-      .single();
-    if (e) throw e;
-    chars.unshift(data);
-    document.getElementById("newName").value = "";
-    toast(`«${name}» готов. Нажми «Ссылка игроку», чтобы отправить его.`);
-  } catch (e){
+  const q = editId
+    ? sb.from("characters").update({ name: c.name, data: c }).eq("id", editId)
+    : sb.from("characters").insert({ name: c.name, data: c });
+  const { data, error: e } = await q.select(LIST_COLS).single();
+  busy = false;
+  if (e){
     console.error(e);
-    toast(/Слишком много/.test(e.message || "") ? e.message : "Не получилось создать персонажа. Попробуй ещё раз.");
+    toast(/Слишком много/.test(e.message || "") ? e.message : "Не получилось сохранить. Попробуй ещё раз.");
+    render(); return false;
   }
-  busy = false; render();
+  chars = [data, ...chars.filter(x => x.id !== data.id)];
+  toast(editId ? `«${c.name}» обновлён. Ссылка у игрока та же.` : `«${c.name}» готов: ${Math.max(1, Math.round(size / 1024))} КБ в базе. Нажми «Ссылка игроку».`);
+  return true;
 }
+// Выбор мастера лежит внутри листа: достаём только его, без всего персонажа
+async function loadChoices(id){
+  const { data, error: e } = await sb.from("characters").select("choices:data->source->choices").eq("id", id).single();
+  if (e || !data?.choices){ console.error(e); toast("Не получилось открыть персонажа в конструкторе."); return null; }
+  return data.choices;
+}
+const ctx = { esc, toast, render: () => render(), busy: () => busy, save: saveCharacter, loadChoices };
 
 /* ---------- кнопки ---------- */
 const H = {
@@ -361,6 +398,11 @@ const H = {
     render();
   },
   eqDel: b => { review.char.equipment.splice(+b.dataset.i, 1); render(); },
+  rvSpell: b => {
+    const i = review.spellIds.indexOf(b.dataset.v);
+    if (i >= 0) review.spellIds.splice(i, 1); else review.spellIds.push(b.dataset.v);
+    render();
+  },
   cancelImport: () => { review = null; render(); window.scrollTo({ top: 0 }); },
   saveImport: () => { if (!busy) saveImport(); },
   cancelDel: () => { confirmDel = null; render(); },
@@ -374,11 +416,14 @@ const H = {
   }
 };
 
+Object.assign(H, createHandlers(ctx));
+
 document.addEventListener("click", e => {
   const b = e.target.closest("[data-act]");
   if (b && H[b.dataset.act]) H[b.dataset.act](b);
 });
 document.addEventListener("input", e => {
+  if (createInput(e, ctx)) return;
   const el = e.target.closest("[data-bind]");
   if (!el || !review) return;
   const val = el.type === "number" ? (parseInt(el.value, 10) || 0) : el.value;
@@ -390,13 +435,8 @@ document.addEventListener("input", e => {
   }
 });
 document.addEventListener("change", e => {
+  if (createChange(e, ctx)) return;
   if (e.target.id === "lssFile" && e.target.files[0]) startImport(e.target.files[0]);
-});
-document.addEventListener("submit", e => {
-  if (e.target.id !== "newForm") return;
-  e.preventDefault();
-  const name = document.getElementById("newName").value.trim();
-  if (name && !busy) createChar(name);
 });
 
 /* ---------- запуск: Supabase сам сообщает, вошёл мастер или нет ---------- */

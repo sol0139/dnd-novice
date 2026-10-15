@@ -481,16 +481,22 @@ export function importLSS(file, { kb, dict }){
   // Движение
   features.push({ id: "movement", kind: "movement", scene: "combat", name: "Скорость", source: "вид", plain: "Движение можно делить: шаг, удар, ещё пара шагов. Действие «Рывок» удваивает его на один ход." });
 
-  // Ячейки заклинаний: переносим как то, что тратится; сами заклинания — в находки
+  // Заклинатель: ячейки переносим в лист, а сами заклинания мастер отмечает на экране проверки
+  // (в файле LSS лежат только номера заклинаний из их справочника, без названий)
   const slotLevels = Object.entries(d.spells || {}).map(([k, s]) => [k.match(/^slots-(\d)$/)?.[1], num(s?.value)]).filter(([lv, n]) => lv && n > 0);
   const pact = Object.entries(d.spellsPact || {}).map(([k, s]) => num(s?.value)).filter(Boolean);
-  for (const [lv, n] of slotLevels){
-    features.push({ id: "slots" + lv, kind: "passive", scene: "combat", name: `Ячейки заклинаний ${lv} уровня`, source: "класс", plain: "Каждое заклинание этого уровня тратит одну ячейку. Заклинание можно наложить и ячейкой повыше.", uses: { max: n, recharge: cls?.caster === "pact" ? "short" : "long" } });
-  }
-  if (pact.length) add("info", "Ячейки договора колдуна в файле есть, но пока не переносятся.");
+  if (pact.length) add("info", "Ячейки договора колдуна в файле есть, но пока не переносятся: проверь их на вкладке «Магия».");
   const prepared = (file.spells?.prepared || []).length;
-  if (prepared || slotLevels.length){
-    add("warn", `Заклинатель: ${prepared ? `в LSS выбрано ${prepared} заклинаний, но в файле лежат только их номера из справочника LSS, без названий. ` : ""}Ячейки перенёс, а показывать сами заклинания чарник пока не умеет. Это следующий шаг.`);
+  const CAST_AB = { bard: "cha", sorcerer: "cha", warlock: "cha", paladin: "cha", cleric: "wis", druid: "wis", ranger: "wis", wizard: "int", artificer: "int" };
+  const baseAb = ["str", "dex", "con", "int", "wis", "cha"].includes(d.spellsInfo?.base?.value) ? d.spellsInfo.base.value : null;
+  const castAb = baseAb || (cls && CAST_AB[cls.id]) || null;
+  if (castAb && (prepared || slotLevels.length || cls?.caster)){
+    const m = mod(stats[castAb]);
+    ch.spellcasting = { ability: castAb, attack: pb + m, dc: 8 + pb + m, slots: Object.fromEntries(slotLevels), recharge: cls?.caster === "pact" ? "short" : "long", prepared: ["cleric", "druid", "wizard", "paladin"].includes(cls?.id), source: "класс" };
+    ch.spells = [];
+    add("warn", `Заклинатель: ${prepared ? `в LSS выбрано ${prepared} заклинаний, но в файле лежат только их номера, без названий. ` : ""}Ячейки перенёс. Отметь заклинания ниже, в разделе «Заклинания»: карточки и числа соберутся сами.`);
+  } else if (prepared || slotLevels.length){
+    add("info", `В файле есть заклинания (${prepared}), но не понятно, через какую характеристику герой колдует. Заклинания не перенесены.`);
   }
 
   ch.features = features;

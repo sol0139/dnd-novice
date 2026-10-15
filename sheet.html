@@ -30,6 +30,7 @@
 [data-kind="reaction"]{--k:var(--k-reaction)}
 [data-kind="movement"]{--k:var(--k-movement)}
 [data-kind="passive"]{--k:var(--k-passive)}
+[data-kind="long"]{--k:var(--k-passive)}
 
 /* Шапка */
 .top{display:flex;flex-direction:column;gap:16px}
@@ -173,6 +174,22 @@ h2 .dot{flex:none;width:10px;height:10px;border-radius:50%;background:var(--k)}
 .ca dd{font-size:14.5px;line-height:1.45;color:var(--fg-3)}
 .ca dd b{color:var(--fg);font-weight:600}
 
+/* Магия */
+.badges{display:flex;flex-wrap:wrap;gap:6px}
+.badge{display:inline-flex;align-items:center;height:26px;padding:0 10px;border-radius:13px;background:var(--neutral);font-size:12.5px;font-weight:500;color:var(--fg-3)}
+.badge.kind{gap:7px;color:var(--fg-2)}
+.badge.kind i{width:8px;height:8px;border-radius:50%;background:var(--k)}
+.ab[data-kind="long"] .badge.kind i{background:transparent;box-shadow:inset 0 0 0 2px var(--k)}
+.badge.conc{background:color-mix(in srgb,var(--k-reaction) 16%,transparent);color:var(--fg-2)}
+.slots{padding:8px 8px 8px 18px;display:flex;flex-direction:column}
+.slot-row{display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:10px 12px;padding:10px 0}
+.slot-row + .slot-row{border-top:1px solid var(--line)}
+.slot-row b{font-weight:600;font-size:15.5px}
+.slot-row .use-info{flex:1}
+.cast{display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:10px;padding-top:2px}
+.cast .meta{flex:1;min-width:12em}
+.spend{display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:10px;padding-top:2px}
+
 /* Спасброски */
 .saves{padding:8px;display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:4px}
 .sv{display:flex;align-items:center;justify-content:space-between;gap:8px;padding:12px 14px;border-radius:16px;min-width:0}
@@ -221,7 +238,7 @@ h2 .dot{flex:none;width:10px;height:10px;border-radius:50%;background:var(--k)}
 .foot a{color:var(--accent-ink);font-weight:500}
 
 /* Вкладки: сегменты под кнопками отдыха */
-.tabs{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:4px;padding:4px;margin-top:4px;border-radius:22px;background:var(--surface);box-shadow:var(--shadow)}
+.tabs{display:grid;grid-template-columns:repeat(var(--tabs,3),minmax(0,1fr));gap:4px;padding:4px;margin-top:4px;border-radius:22px;background:var(--surface);box-shadow:var(--shadow)}
 .tab{min-width:0;min-height:48px;padding:10px 8px;border:0;border-radius:18px;background:transparent;color:var(--fg-3);
   display:flex;flex-direction:row;align-items:center;justify-content:center;gap:6px;
   font-family:var(--f-btn);font-weight:600;font-size:14px;letter-spacing:-.15px;transition:background-color .15s,color .15s}
@@ -230,6 +247,9 @@ h2 .dot{flex:none;width:10px;height:10px;border-radius:50%;background:var(--k)}
 /* На узком телефоне «Характеристики» с иконкой не влезают в треть ширины — там подпись «Статы» */
 .tab .short{display:none}
 @media (max-width:479px){ .tab .long{display:none} .tab .short{display:inline} }
+/* Четыре вкладки у заклинателя: на узком экране чуть плотнее */
+@media (max-width:479px){ .tabs.t4 .tab{padding:10px 4px;gap:4px;font-size:13px} .tabs.t4 .tab svg.i{width:17px;height:17px} }
+@media (max-width:359px){ .tabs.t4 .tab svg.i{display:none} }
 .tab:hover{color:var(--fg)}
 .tab[aria-selected="true"]{background:var(--accent);color:var(--on-accent)}
 .top-btns{display:flex;align-items:center;gap:8px;flex:none}
@@ -320,7 +340,8 @@ const KINDS = {
   bonus:    { name: "Бонусное действие", term: "bonus",    note: "Одно за ход, и только если есть способность на него." },
   reaction: { name: "Реакция",           term: "reaction", note: "Одна за раунд. Можно потратить и в чужой ход." },
   movement: { name: "Движение",          term: "movement", note: "Делится как угодно: до, после и между действиями." },
-  passive:  { name: "Работает само",     term: null,       note: "Нажимать ничего не нужно, просто помни об этом." }
+  passive:  { name: "Работает само",     term: null,       note: "Нажимать ничего не нужно, просто помни об этом." },
+  long:     { name: "Вне боя",           term: null,       note: "Колдуется минуту и дольше: для разведки и передышки, не для схватки." }
 };
 const ABBR = { str: "СИЛ", dex: "ЛОВ", con: "ТЕЛ", int: "ИНТ", wis: "МДР", cha: "ХАР" };
 
@@ -359,25 +380,37 @@ const isExpert  = id => (CH.expertise || []).includes(id);
 const hasSkill  = id => CH.skills.includes(id) || isExpert(id);
 const skill     = id => KB.skills.find(s => s.id === id);
 // экспертиза — двойное мастерство; ручные поправки из импорта прибавляются сверху
-const skillB    = s => am(s.ability) + (isExpert(s.id) ? 2 * pb() : hasSkill(s.id) ? pb() : 0) + ((CH.skillMods || {})[s.id] || 0);
+// «Мастер на все руки» у барда: половина мастерства к навыкам без мастерства
+const half      = () => (CH.halfProf ? Math.floor(pb() / 2) : 0);
+const skillB    = s => am(s.ability) + (isExpert(s.id) ? 2 * pb() : hasSkill(s.id) ? pb() : half()) + ((CH.skillMods || {})[s.id] || 0);
 const saveB     = a => am(a) + (CH.saves.includes(a) ? pb() : 0) + ((CH.saveMods || {})[a] || 0);
-const initB     = () => CH.initiative ?? am("dex");
+const initB     = () => CH.initiative ?? am("dex") + half();
 const squares   = () => CH.speed / 5;
 const hitDieF   = () => CH.hitDice.die + (am("con") >= 0 ? "+" : "") + am("con");
 const hdLeft    = () => CH.hitDice.count - S.hitDiceUsed;
 const usesLeft  = f => f.uses.max - (S.used[f.id] || 0);
 const attackOf  = f => f.attack || byId[f.attackRef].attack;
 const scene     = f => f.scene || "combat";
+// Заклинания и ячейки
+const hasMagic  = () => (CH.spells || []).length > 0 || Object.values((CH.spellcasting || {}).slots || {}).some(n => n > 0);
+const SC        = () => CH.spellcasting || null;
+const slotMax   = l => ((SC() || {}).slots || {})[l] || 0;
+const slotLeft  = l => slotMax(l) - ((S.slots || {})[l] || 0);
+const slotLevels = () => Object.keys((SC() || {}).slots || {}).map(Number).filter(l => slotMax(l) > 0).sort((a, b) => a - b);
+const slotFor   = lvl => slotLevels().find(l => l >= lvl && slotLeft(l) > 0) || null;
+const spellById = id => (CH.spells || []).find(s => s.id === id);
+const pool      = f => (f.spend ? byId[f.spend.id] : null);
+const spendLeft = f => { const p = pool(f); return p ? Math.floor(usesLeft(p) / (f.spend.cost || 1)) : 0; };
 
 /* ---------- состояние ---------- */
 const freshTurn  = () => ({ action: null, bonus: null });
-const freshState = () => ({ hp: CH.hp.max, used: {}, hitDiceUsed: 0, turn: freshTurn() });
+const freshState = () => ({ hp: CH.hp.max, used: {}, slots: {}, hitDiceUsed: 0, turn: freshTurn() });
 // [[ключ|текст]] → просто текст (внутри кнопок подчёркнутые слова не нужны)
 const plainText  = s => String(s).replace(/\[\[[a-z0-9-]+\|([^\]]+)\]\]/g, "$1");
 function load(){
   try {
     const s = JSON.parse(localStorage.getItem(KEY));
-    if (s && typeof s.hp === "number") return Object.assign(freshState(), s);
+    if (s && typeof s.hp === "number"){ const st = Object.assign(freshState(), s); st.hp = Math.min(st.hp, CH.hp.max); return st; }
   } catch (e) {}
   return freshState();
 }
@@ -401,10 +434,36 @@ function card(f){
     if (a.range) b += `<p class="meta">Дальность: ${rich(a.range)}</p>`;
   }
   if (f.heal) b += `<div class="chips"><span class="chip"><span class="cl">Лечит</span><b>${showF(f.heal)}</b><span class="cu">хитов</span></span></div>`;
+  if (f.save || f.dmg) b += `<div class="chips">${saveChip(f.save)}${dmgChip(f.dmg)}</div>`;
   if (f.why)  b += `<details class="why"><summary>Откуда числа</summary><p>${rich(f.why)}</p></details>`;
   if (f.uses) b += `<div class="use" id="u-${f.id}"></div>`;
+  if (f.spend && pool(f)) b += `<div class="spend" id="sp-${f.id}"></div>`;
   return `<article class="ab card" data-kind="${f.kind}" id="f-${f.id}">
     <div class="ab-h"><h3>${esc(f.name)}</h3><span class="src">${esc(f.source)}</span></div>${b}
+  </article>`;
+}
+
+const saveChip = sv => sv ? `<span class="chip"><span class="cl">${term("save", "Спасбросок")}</span><b>${ABBR[sv.ab]} ${sv.dc}</b>${sv.half ? `<span class="cu">успех — половина</span>` : ""}</span>` : "";
+const dmgChip  = d => d ? `<span class="chip"><span class="cl">Урон</span><b>${showF(d.dice)}</b>${d.type ? `<span class="cu">${esc(d.type)}</span>` : ""}</span>` : "";
+
+/* Карточка заклинания */
+const CIRCLE = l => l === 0 ? "заговор" : `${l} круг`;
+function spellCard(sp){
+  const K = KINDS[sp.kind] || KINDS.action;
+  let b = `<div class="badges"><span class="badge kind"><i aria-hidden="true"></i>${K.term ? term(K.term, K.name) : esc(K.name)}</span>${sp.conc ? `<span class="badge conc">${term("concentration", "Концентрация")}</span>` : ""}${sp.ritual ? `<span class="badge">${term("ritual", "Ритуал")}</span>` : ""}${sp.always ? `<span class="badge">всегда подготовлено</span>` : ""}</div>`;
+  b += `<p class="plain">${rich(sp.plain)}</p>`;
+  const chips = [];
+  if (sp.attack) chips.push(`<span class="chip"><span class="cl">${term("spell-attack", "Попадание")}</span><b>${showF(d20(sp.attack.toHit))}</b></span>`,
+    `<span class="chip"><span class="cl">Урон${sp.count ? ` ×${sp.count}` : ""}</span><b>${showF(sp.attack.damage)}</b>${sp.attack.damageType ? `<span class="cu">${esc(sp.attack.damageType)}</span>` : ""}</span>`);
+  if (sp.save) chips.push(saveChip(sp.save));
+  if (sp.dmg) chips.push(`<span class="chip"><span class="cl">Урон${sp.count ? ` ×${sp.count}` : ""}</span><b>${showF(sp.dmg.dice)}</b>${sp.dmg.type ? `<span class="cu">${esc(sp.dmg.type)}</span>` : ""}</span>`);
+  if (sp.heal) chips.push(`<span class="chip"><span class="cl">Лечит</span><b>${showF(sp.heal)}</b><span class="cu">хитов</span></span>`);
+  if (sp.sleep) chips.push(`<span class="chip"><span class="cl">Усыпляет</span><b>${showF(sp.sleep)}</b><span class="cu">хитов существ</span></span>`);
+  if (chips.length) b += `<div class="chips">${chips.join("")}</div>`;
+  b += `<p class="meta">Дальность: ${esc(sp.range)} · длится: ${esc(sp.dur)}${sp.upcast ? `. ${esc(sp.upcast)}` : ""}${sp.healNote ? ` ${esc(sp.healNote)}` : ""}</p>`;
+  if (sp.level > 0 && slotLevels().length) b += `<div class="cast" id="c-${sp.id}"></div>`;
+  return `<article class="ab card" data-kind="${sp.kind}" id="s-${sp.id}">
+    <div class="ab-h"><h3>${esc(sp.name)}</h3>${sp.source ? `<span class="src">${esc(sp.source)}</span>` : ""}</div>${b}
   </article>`;
 }
 
@@ -414,7 +473,7 @@ function commonActions(){
     let extra = "";
     if (c.skill){
       const s = skill(c.skill);
-      extra = ` ${esc(s.name)} <b>${sg(skillB(s))}</b>${c.skill === "stealth" && armorDis ? ", в кольчуге с помехой" : ""}.`;
+      extra = ` ${esc(s.name)} <b>${sg(skillB(s))}</b>${c.skill === "stealth" && armorDis ? ", в этом доспехе с помехой" : ""}.`;
     }
     return `<div class="ca"><dt>${esc(c.name)}</dt><dd>${rich(c.plain)}${extra}</dd></div>`;
   }).join("");
@@ -475,6 +534,7 @@ function panelStats(){
     ${(CH.languages || []).length ? `<section class="sec">
       <div class="sec-h"><h2>Языки</h2><p>На этих языках ${esc(CH.name)} говорит и читает.</p></div>
       <div class="langs">${CH.languages.map(l => `<span class="lang card">${esc(l)}</span>`).join("")}</div>
+      ${CH.tools ? `<p class="meta">Инструменты, которыми ${esc(CH.name)} владеет: ${esc(CH.tools)}.</p>` : ""}
     </section>` : ""}
   </section>`;
 }
@@ -519,6 +579,35 @@ function panelCombat(){
     </div>
     ${["action", "bonus", "reaction", "movement", "passive"].map(k => group(k, cf.filter(f => f.kind === k))).join("")}
     ${savesSec(true)}
+  </section>`;
+}
+
+function panelMagic(){
+  if (!hasMagic()) return "";
+  const sc = SC(), list = CH.spells || [];
+  const ABN = { str: "Силу", dex: "Ловкость", con: "Телосложение", int: "Интеллект", wis: "Мудрость", cha: "Харизму" };
+  const tiles = sc ? `<div class="stats2">
+      <div class="tile card"><span class="tl">${term("spell-attack", "Атака заклинанием")}</span><span class="tv">${sg(sc.attack)}</span><span class="ts">Прибавляй к к20, когда заклинание просит попасть</span></div>
+      <div class="tile card"><span class="tl">${term("spell-dc", "Сложность спасброска")}</span><span class="tv">${sc.dc}</span><span class="ts">Враг спасается, если выбросит ${sc.dc} или больше</span></div>
+    </div>
+    <p class="meta">Колдуешь через ${ABN[sc.ability] || "характеристику"}.${sc.prepared ? " После длинного отдыха можно сменить подготовленные заклинания: договорись с мастером." : ""}</p>` : "";
+  const levels = slotLevels();
+  const slots = levels.length ? `<section class="sec">
+      <div class="sec-h"><h2>${term("spell-slot", "Ячейки заклинаний")}</h2><p>Заговоры бесплатны. Остальное тратит ячейку своего круга или выше. Вернутся после ${sc.recharge === "short" ? term("short-rest", "короткого отдыха") : term("long-rest", "длинного отдыха")}.</p></div>
+      <div class="card slots">${levels.map(l => `<div class="slot-row" id="sl-${l}"></div>`).join("")}</div>
+    </section>` : "";
+  const groups = [0, 1, 2, 3].map(l => {
+    const ls = list.filter(sp => sp.level === l);
+    if (!ls.length) return "";
+    return `<section class="sec">
+      <div class="sec-h"><h2>${l === 0 ? term("cantrip", "Заговоры") : `${l} круг`}</h2><p>${l === 0 ? "Сколько угодно раз, ячейки не нужны." : `Тратит ячейку ${l} круга или выше.`}</p></div>
+      ${ls.map(spellCard).join("")}
+    </section>`;
+  }).join("");
+  return `<section class="panel" id="p-magic" role="tabpanel" aria-labelledby="t-magic">
+    ${sc ? `<section class="sec">${tiles}</section>` : ""}
+    ${slots}
+    ${groups}
   </section>`;
 }
 
@@ -578,13 +667,14 @@ function render(){
       <button type="button" class="qbtn" data-act="short" aria-haspopup="dialog">Короткий отдых</button>
       <button type="button" class="qbtn" data-act="long" aria-haspopup="dialog">Длинный отдых</button>
     </div>
-    <div class="tabs" role="tablist" aria-label="Разделы чарника">
+    <div class="tabs${hasMagic() ? " t4" : ""}" role="tablist" aria-label="Разделы чарника" style="--tabs:${hasMagic() ? 4 : 3}">
       <button type="button" class="tab" role="tab" id="t-stats" data-tab="stats" aria-controls="p-stats" aria-selected="true" aria-label="Характеристики"><svg class="i" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="8" r="3.6"/><path d="M5 20.2c.9-3.6 3.7-5.6 7-5.6s6.1 2 7 5.6"/></svg><span class="long">Характеристики</span><span class="short" aria-hidden="true">Статы</span></button>
       <button type="button" class="tab" role="tab" id="t-combat" data-tab="combat" aria-controls="p-combat" aria-selected="false"><svg class="i" viewBox="0 0 24 24" aria-hidden="true"><path d="M20 4l-.5 4.5-9 9-4-4 9-9z"/><path d="M5 12.5l6.5 6.5"/><path d="M8 16 4 20"/></svg><span>Боевка</span></button>
+      ${hasMagic() ? `<button type="button" class="tab" role="tab" id="t-magic" data-tab="magic" aria-controls="p-magic" aria-selected="false"><svg class="i" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3.5l1.9 4.6 4.6 1.9-4.6 1.9L12 16.5l-1.9-4.6L5.5 10l4.6-1.9z"/><path d="M18.5 15.5l.8 1.9 1.9.8-1.9.8-.8 1.9-.8-1.9-1.9-.8 1.9-.8z"/></svg><span>Магия</span></button>` : ""}
       <button type="button" class="tab" role="tab" id="t-gear" data-tab="gear" aria-controls="p-gear" aria-selected="false"><svg class="i" viewBox="0 0 24 24" aria-hidden="true"><path d="M8.5 7V5.5A2.5 2.5 0 0 1 11 3h2a2.5 2.5 0 0 1 2.5 2.5V7"/><rect x="4.5" y="7" width="15" height="14" rx="4.5"/><path d="M9 13h6v4H9z"/></svg><span>Снаряга</span></button>
     </div>
   </header>
-  <div id="panels">${panelStats()}${panelCombat()}${panelGear()}</div>
+  <div id="panels">${panelStats()}${panelCombat()}${panelMagic()}${panelGear()}</div>
   <footer class="foot">
     <p>Правила D&amp;D 5e (2014). Часть материалов взята из System Reference Document 5.1 © Wizards of the Coast LLC, лицензия CC-BY-4.0. Описания пересказаны простыми словами.</p>
     <p>Хиты и потраченные способности запоминаются в этом браузере.</p>
@@ -625,6 +715,30 @@ function refresh(){
     $("#f-" + f.id).classList.toggle("spent", l <= 0);
   });
 
+  // Приёмы, которые тратят общий запас (ки, вдохновение, божественный канал)
+  CH.features.filter(f => f.spend && pool(f)).forEach(f => {
+    const el = $("#sp-" + f.id);
+    if (!el) return;
+    const p = pool(f), cost = f.spend.cost || 1, can = usesLeft(p) >= cost;
+    el.innerHTML = `<span class="meta">Тратит ${cost} из «${esc(p.name)}» · осталось ${usesLeft(p)} из ${p.uses.max}</span>
+      <button type="button" class="btn ${can ? "primary" : "neutral"}" data-act="spend" data-id="${f.id}"${can ? "" : " disabled"}>${can ? "Использовать" : "Нечем"}</button>`;
+  });
+  // Ячейки заклинаний
+  slotLevels().forEach(l => {
+    const el = $("#sl-" + l);
+    if (!el) return;
+    const left = slotLeft(l), max = slotMax(l);
+    el.innerHTML = `<b>${l} круг</b><div class="use-info"><span class="pips">${Array.from({ length: max }, (_, i) => `<i class="${i < left ? "full" : ""}"></i>`).join("")}</span><span>${left} из ${max}</span></div>
+      <span class="use-btns">${left < max ? `<button type="button" class="btn neutral" data-act="slotBack" data-l="${l}">Вернуть</button>` : ""}${left > 0 ? `<button type="button" class="btn primary" data-act="slotUse" data-l="${l}">Потратить</button>` : ""}</span>`;
+  });
+  (CH.spells || []).filter(sp => sp.level > 0).forEach(sp => {
+    const el = $("#c-" + sp.id);
+    if (!el) return;
+    const l = slotFor(sp.level);
+    el.innerHTML = `<span class="meta">${l ? `Потратит ячейку ${l} круга` : `Ячеек ${sp.level} круга и выше не осталось`}${sp.ritual ? ". Ритуалом — без ячейки, но на 10 минут дольше" : ""}</span>
+      <button type="button" class="btn ${l ? "primary" : "neutral"}" data-act="cast" data-id="${sp.id}"${l ? "" : " disabled"}>Сотворить</button>`;
+  });
+
   ["action", "bonus"].forEach(slot => {
     const t = $(`.tok[data-slot="${slot}"]`);
     if (t) t.dataset.spent = String(!!S.turn[slot]);
@@ -651,9 +765,9 @@ function themeIcon(){
 try { matchMedia("(prefers-color-scheme: dark)").addEventListener("change", themeIcon); } catch (e) {}
 
 /* ---------- вкладки ---------- */
-const TABS = ["stats", "combat", "gear"];
+const TABS = ["stats", "combat", "magic", "gear"];
 function setTab(id, scroll){
-  if (!TABS.includes(id)) id = "stats";
+  if (!TABS.includes(id) || (id === "magic" && !hasMagic())) id = "stats";
   $$(".panel").forEach(p => { p.hidden = p.id !== "p-" + id; });
   $$(".tab").forEach(t => t.setAttribute("aria-selected", String(t.dataset.tab === id)));
   try { localStorage.setItem(TAB_KEY, id); } catch (e) {}
@@ -697,6 +811,10 @@ function renderRest(kind){
     const spent = usesLeft(f) < f.uses.max;
     rows.push(retRow(f.name, spent ? "вернётся" : "уже готово", spent));
   });
+  if (slotLevels().length && (!isS || SC().recharge === "short")){
+    const spent = slotLevels().some(l => slotLeft(l) < slotMax(l));
+    rows.push(retRow("Ячейки заклинаний", spent ? "вернутся" : "уже готовы", spent));
+  }
   if (!isS) rows.push(retRow("Кость хитов", S.hitDiceUsed > 0 ? "вернётся" : "уже на месте", S.hitDiceUsed > 0));
 
   $("#drTitle").textContent = isS ? "Короткий отдых" : "Длинный отдых";
@@ -721,9 +839,19 @@ function renderRest(kind){
   html += `<button type="button" class="btn wide primary" data-act="${isS ? "restShort" : "restLong"}">${isS ? "Отдохнуть часок" : "Переночевать"}</button>`;
   $("#drBody").innerHTML = html;
 }
+/* Подсказка после заклинания: что бросать */
+function spellToast(sp, l){
+  const parts = [sp.name + (l ? ` (ячейка ${l} круга)` : "")];
+  if (sp.attack) parts.push(`брось ${showF(d20(sp.attack.toHit))} на попадание, ${gf("попала", "попал")} — ${showF(sp.attack.damage)}${sp.count ? ` за каждый из ${sp.count}` : ""}`);
+  else if (sp.save) parts.push(`цель спасается: ${ABBR[sp.save.ab]} против ${sp.save.dc}${sp.dmg ? `, урон ${showF(sp.dmg.dice)}` : ""}`);
+  else if (sp.dmg) parts.push(`урон ${showF(sp.dmg.dice)}${sp.count ? ` × ${sp.count}` : ""}`);
+  if (sp.heal) parts.push(`лечит ${showF(sp.heal)}`);
+  if (sp.conc) parts.push("держи концентрацию");
+  return parts[0] + (parts.length > 1 ? ": " + parts.slice(1).join(", ") : "") + ".";
+}
 /* Шторка выбора: что можно сделать действием или бонусным действием */
 function optFeature(f, slot){
-  const left = f.uses ? usesLeft(f) : 1;
+  const left = f.uses ? usesLeft(f) : f.spend && pool(f) ? spendLeft(f) : 1;
   let chips = "";
   if (f.attack || f.attackRef){
     const a = attackOf(f);
@@ -731,8 +859,19 @@ function optFeature(f, slot){
   }
   if (f.heal) chips = `<span class="chips"><span class="chip"><span class="cl">Лечит</span><b>${showF(f.heal)}</b><span class="cu">хитов</span></span></span>`;
   const note = f.uses && left <= 0
-    ? `<span class="opt-d">Потрачено · вернётся после ${f.uses.recharge === "short" ? "короткого" : "длинного"} отдыха</span>` : "";
+    ? `<span class="opt-d">Потрачено · вернётся после ${f.uses.recharge === "short" ? "короткого" : "длинного"} отдыха</span>`
+    : f.spend && pool(f) ? `<span class="opt-d">Тратит ${f.spend.cost || 1} из «${esc(pool(f).name)}»${left <= 0 ? " — не осталось" : ""}</span>` : "";
   return `<button type="button" class="opt" data-act="pick" data-slot="${slot}" data-id="${f.id}"${left <= 0 ? " disabled" : ""}><span class="opt-n">${esc(f.name)}</span>${chips}${note}</button>`;
+}
+function optSpell(sp, slot){
+  const l = sp.level ? slotFor(sp.level) : 0;
+  const off = sp.level > 0 && !l;
+  const chips = [];
+  if (sp.attack) chips.push(`<span class="chip"><span class="cl">Попадание</span><b>${showF(d20(sp.attack.toHit))}</b></span><span class="chip"><span class="cl">Урон</span><b>${showF(sp.attack.damage)}</b></span>`);
+  if (sp.save) chips.push(`<span class="chip"><span class="cl">Спасбросок</span><b>${ABBR[sp.save.ab]} ${sp.save.dc}</b></span>`);
+  if (sp.dmg) chips.push(`<span class="chip"><span class="cl">Урон</span><b>${showF(sp.dmg.dice)}</b></span>`);
+  if (sp.heal) chips.push(`<span class="chip"><span class="cl">Лечит</span><b>${showF(sp.heal)}</b></span>`);
+  return `<button type="button" class="opt" data-act="pick" data-slot="${slot}" data-spell="${sp.id}"${off ? " disabled" : ""}><span class="opt-n">${esc(sp.name)}</span>${chips.length ? `<span class="chips">${chips.join("")}</span>` : ""}<span class="opt-d">${sp.level ? (l ? `${CIRCLE(sp.level)} · потратит ячейку ${l} круга` : "Ячеек не осталось") : "заговор · бесплатно"}${sp.conc ? " · концентрация" : ""}</span></button>`;
 }
 function renderSlot(slot){
   const isA = slot === "action", chosen = S.turn[slot];
@@ -740,18 +879,22 @@ function renderSlot(slot){
   if (chosen){
     $("#drBody").innerHTML = `
       <p>В этом ходу уже выбрано: <b>${esc(chosen.name)}</b>.</p>
-      <p class="meta">Следующее будет в новом ходу.${chosen.consumed ? ` Отмена вернёт и саму способность.` : ""}</p>
+      <p class="meta">Следующее будет в новом ходу.${chosen.consumed || chosen.spent ? ` Отмена вернёт и потраченное.` : chosen.slotLevel ? ` Отмена вернёт ячейку ${chosen.slotLevel} круга.` : ""}</p>
       <button type="button" class="btn wide neutral" data-act="unpick" data-slot="${slot}">Отменить выбор</button>`;
     return;
   }
   const feats = CH.features.filter(f => f.kind === slot && scene(f) === "combat");
+  const spells = (CH.spells || []).filter(sp => sp.kind === slot);
+  const spellsHtml = spells.length ? `<h4 class="dr-sub">Заклинания</h4><div class="opts">${spells.map(sp => optSpell(sp, slot)).join("")}</div>` : "";
   let html = `<p class="meta">${isA ? "Одно за ход. Выбери, что делаешь." : "Одно за ход, если есть способность на него."}</p>`;
   if (isA){
-    html += `<h4 class="dr-sub">Твои атаки</h4><div class="opts">${feats.map(f => optFeature(f, slot)).join("")}</div>
+    html += `${feats.length ? `<h4 class="dr-sub">Твои атаки и умения</h4><div class="opts">${feats.map(f => optFeature(f, slot)).join("")}</div>` : ""}${spellsHtml}
       <h4 class="dr-sub">Что ещё можно</h4><div class="opts">${KB.commonActions.map((c, i) =>
         `<button type="button" class="opt" data-act="pick" data-slot="action" data-ca="${i}"><span class="opt-n">${esc(c.name)}</span><span class="opt-d">${esc(plainText(c.plain))}</span></button>`).join("")}</div>`;
   } else {
-    html += feats.length ? `<div class="opts">${feats.map(f => optFeature(f, slot)).join("")}</div>` : `<p>Бонусных действий у тебя пока нет.</p>`;
+    html += feats.length || spells.length
+      ? `${feats.length ? `<div class="opts">${feats.map(f => optFeature(f, slot)).join("")}</div>` : ""}${spellsHtml}`
+      : `<p>Бонусных действий у тебя пока нет.</p>`;
   }
   $("#drBody").innerHTML = html;
 }
@@ -772,12 +915,29 @@ const H = {
     if (usesLeft(f) > 0){
       S.used[f.id] = (S.used[f.id] || 0) + 1;
       if (f.kind === "bonus" && !S.turn.bonus) S.turn.bonus = { id: f.id, name: f.name, consumed: true };
+      if (f.grantsAction){ S.turn.action = null; toast(`${f.name}: ещё одно действие в этом ходу. Выбери его на панели хода.`); }
       if (f.trigger === "zero-hp" && S.hp === 0){ S.hp = 1; toast(`${f.name}: ты на ногах с 1 хитом.`); }
       else if (f.heal) toast(`Брось ${showF(f.heal)} и добавь столько хитов кнопкой «+».`);
     } else {
       S.used[f.id] = Math.max(0, (S.used[f.id] || 0) - 1);
       if (S.turn.bonus && S.turn.bonus.id === f.id) S.turn.bonus = null;
     }
+  },
+
+  spend: b => {
+    const f = byId[b.dataset.id], p = pool(f), cost = f.spend.cost || 1;
+    if (!p || usesLeft(p) < cost) return;
+    S.used[p.id] = (S.used[p.id] || 0) + cost;
+    toast(`${f.name}: потрачено ${cost} из «${p.name}». Осталось ${usesLeft(p)}.`);
+  },
+  slotUse:  b => { const l = +b.dataset.l; if (slotLeft(l) > 0) S.slots[l] = (S.slots[l] || 0) + 1; },
+  slotBack: b => { const l = +b.dataset.l; S.slots[l] = Math.max(0, (S.slots[l] || 0) - 1); },
+  cast: b => {
+    const sp = spellById(b.dataset.id), l = slotFor(sp.level);
+    if (!l) return;
+    S.slots[l] = (S.slots[l] || 0) + 1;
+    if ((sp.kind === "action" || sp.kind === "bonus") && !S.turn[sp.kind]) S.turn[sp.kind] = { spell: sp.id, name: sp.name, slotLevel: l };
+    toast(spellToast(sp, l));
   },
 
   unuse: b => {
@@ -797,15 +957,26 @@ const H = {
       const c = KB.commonActions[+b.dataset.ca];
       S.turn[slot] = { name: c.name };
       toast(`${c.name}. ${plainText(c.plain)}`);
+    } else if (b.dataset.spell){
+      const sp = spellById(b.dataset.spell);
+      let l = 0;
+      if (sp.level){ l = slotFor(sp.level); if (!l) return; S.slots[l] = (S.slots[l] || 0) + 1; }
+      S.turn[slot] = { spell: sp.id, name: sp.name, slotLevel: l };
+      toast(spellToast(sp, l));
     } else {
       const f = byId[b.dataset.id];
-      let consumed = false;
+      let consumed = false, spent = null;
       if (f.uses){
         if (usesLeft(f) <= 0) return;
         S.used[f.id] = (S.used[f.id] || 0) + 1;
         consumed = true;
+      } else if (f.spend && pool(f)){
+        if (spendLeft(f) <= 0) return;
+        const p = pool(f);
+        S.used[p.id] = (S.used[p.id] || 0) + (f.spend.cost || 1);
+        spent = { id: p.id, n: f.spend.cost || 1 };
       }
-      S.turn[slot] = { id: f.id, name: f.name, consumed };
+      S.turn[slot] = { id: f.id, name: f.name, consumed, spent };
       if (f.attack || f.attackRef){
         const a = attackOf(f);
         toast(`${f.name}: брось ${showF(d20(a.toHit))} на попадание. ${gf("Попала", "Попал")} — ${showF(a.damage)} урона.`);
@@ -819,6 +990,8 @@ const H = {
     const slot = b.dataset.slot, c = S.turn[slot];
     if (!c) return;
     if (c.consumed && c.id) S.used[c.id] = Math.max(0, (S.used[c.id] || 0) - 1);
+    if (c.spent) S.used[c.spent.id] = Math.max(0, (S.used[c.spent.id] || 0) - c.spent.n);
+    if (c.slotLevel) S.slots[c.slotLevel] = Math.max(0, (S.slots[c.slotLevel] || 0) - 1);
     S.turn[slot] = null;
   },
   newturn: () => {
@@ -833,6 +1006,8 @@ const H = {
     snap();
     const back = CH.features.filter(f => f.uses && f.uses.recharge === "short" && S.used[f.id]);
     back.forEach(f => { S.used[f.id] = 0; });
+    const slotsBack = SC() && SC().recharge === "short" && slotLevels().some(l => slotLeft(l) < slotMax(l));
+    if (slotsBack){ S.slots = {}; back.push({ name: "ячейки заклинаний" }); }
     S.turn = freshTurn();
     drawer.close();
     toast(back.length
@@ -841,9 +1016,9 @@ const H = {
   },
   restLong: () => {
     snap();
-    S.hp = CH.hp.max; S.used = {}; S.hitDiceUsed = 0; S.turn = freshTurn();
+    S.hp = CH.hp.max; S.used = {}; S.slots = {}; S.hitDiceUsed = 0; S.turn = freshTurn();
     drawer.close();
-    toast("Длинный отдых. Хиты полные, способности и кость хитов вернулись.", true);
+    toast(`Длинный отдых. Хиты полные, способности${slotLevels().length ? ", ячейки" : ""} и кость хитов вернулись.`, true);
   },
   undo: () => {
     if (!snapshot) return;
@@ -881,6 +1056,13 @@ const getJSON = url => fetch(url).then(r => { if (!r.ok) throw new Error(r.statu
 
 // /c/код → персонаж из базы. Функция в базе отдаёт ровно одного персонажа по коду.
 async function loadCharacter(){
+  if (/^\/preview\/?$/.test(location.pathname)){
+    // Предпросмотр из конструктора: персонаж лежит в этом браузере, в базу не ходим
+    let data = null;
+    try { data = JSON.parse(localStorage.getItem("novice-sheet:preview")); } catch (e) {}
+    try { localStorage.removeItem("novice-sheet:preview:v2"); } catch (e) {}
+    return data ? { id: "preview", data } : null;
+  }
   const m = location.pathname.match(/^\/c\/([a-z0-9]+)\/?$/i);
   if (!m) return { id: "demo", data: await getJSON("/data/mirta.json") };
   const cfg = window.APP_CONFIG || {};

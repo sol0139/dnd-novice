@@ -495,33 +495,9 @@ export function buildCharacter(rules, spellsData, input){
 
   /* --- заклинания --- */
   const spells = [];
-  const spellEntry = (id, abil, extra = {}) => {
-    const s = spellsData.spells[id];
-    if (!s) return null;
-    const m = M[abil], atk = pb + m, dc = 8 + pb + m;
-    const e = { id, name: s.name, level: s.level, kind: CAST_KIND[s.cast] || "action", plain: fill(s.plain, ctx), range: s.range, dur: s.dur };
-    if (s.conc) e.conc = true;
-    if (s.ritual) e.ritual = true;
-    if (s.count) e.count = s.count;
-    if (s.upcast) e.upcast = s.upcast;
-    let dmg = s.dmg;
-    if (dmg && s.dmgMod) dmg = withMod(dmg, m);
-    if (dmg && s.agonizing && cls.agonizing && lvl >= cls.agonizing) dmg = withMod(dmg, M.cha);
-    if (s.attack) e.attack = { toHit: atk, damage: dmg, damageType: s.dtype, melee: s.attack === "melee" };
-    else if (dmg) e.dmg = { dice: dmg, type: s.dtype, half: !!s.half };
-    if (s.save) e.save = { ab: s.save, dc, half: !!s.half };
-    if (s.sleep) e.sleep = s.sleep;
-    if (s.heal){
-      let h = s.healMod ? withMod(s.heal, m) : s.heal;
-      if (subcl && subcl.healBonus && s.level >= 1){
-        const b = 2 + s.level;
-        h = h.replace(/([+-]\d+)?$/, x => { const v = (x ? +x : 0) + b; return v ? (v > 0 ? "+" : "-") + Math.abs(v) : ""; });
-        e.healNote = `Ученик жизни: +${b} уже учтено.`;
-      }
-      e.heal = h;
-    }
-    return Object.assign(e, extra);
-  };
+  const agon = cls.agonizing && lvl >= cls.agonizing ? M.cha : 0;
+  const spellEntry = (id, abil, extra = {}) =>
+    makeSpell(spellsData, id, { m: M[abil], pb, she, agonizing: agon, healBonus: !!(subcl && subcl.healBonus), extra });
   const ci = casterInfo(rules, spellsData, ch, abilities);
   let spellcasting = null;
   if (ci){
@@ -559,6 +535,38 @@ export function buildCharacter(rules, spellsData, input){
     source: { app: "builder", choices: compactChoices(ch) }
   };
   return character;
+}
+
+/* Карточка заклинания для листа: числа уже посчитаны.
+   m — модификатор колдовской характеристики, agonizing — добавка к Мистическому заряду,
+   healBonus — «Ученик жизни» жреца. Используется и конструктором, и импортом из LSS. */
+export function makeSpell(spellsData, id, { m = 0, pb = 2, she = false, agonizing = 0, healBonus = false, extra = {} } = {}){
+  const s = spellsData.spells[id];
+  if (!s) return null;
+  const ctx = { she, num: { pb }, str: {} };
+  const atk = pb + m, dc = 8 + pb + m;
+  const e = { id, name: s.name, level: s.level, kind: CAST_KIND[s.cast] || "action", plain: fill(s.plain, ctx), range: s.range, dur: s.dur };
+  if (s.conc) e.conc = true;
+  if (s.ritual) e.ritual = true;
+  if (s.count) e.count = s.count;
+  if (s.upcast) e.upcast = s.upcast;
+  let dmg = s.dmg;
+  if (dmg && s.dmgMod) dmg = withMod(dmg, m);
+  if (dmg && s.agonizing && agonizing) dmg = withMod(dmg, agonizing);
+  if (s.attack) e.attack = { toHit: atk, damage: dmg, damageType: s.dtype, melee: s.attack === "melee" };
+  else if (dmg) e.dmg = { dice: dmg, type: s.dtype, half: !!s.half };
+  if (s.save) e.save = { ab: s.save, dc, half: !!s.half };
+  if (s.sleep) e.sleep = s.sleep;
+  if (s.heal){
+    let h = s.healMod ? withMod(s.heal, m) : s.heal;
+    if (healBonus && s.level >= 1){
+      const b = 2 + s.level;
+      h = h.replace(/([+-]\d+)?$/, x => { const v = (x ? +x : 0) + b; return v ? (v > 0 ? "+" : "-") + Math.abs(v) : ""; });
+      e.healNote = `Ученик жизни: +${b} уже учтено.`;
+    }
+    e.heal = h;
+  }
+  return Object.assign(e, extra);
 }
 
 // В базу вместе с листом кладём выбор мастера: так персонажа можно открыть в конструкторе и поправить
