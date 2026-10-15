@@ -160,6 +160,7 @@ h2 .dot{flex:none;width:10px;height:10px;border-radius:50%;background:var(--k)}
 .pips{display:inline-flex;gap:5px;flex:none}
 .pips i{width:14px;height:14px;border-radius:5px;box-shadow:inset 0 0 0 2px var(--accent)}
 .pips i.full{background:var(--accent)}
+.use-btns{display:inline-flex;gap:8px;flex-wrap:wrap}
 .ab.spent > :not(.use){opacity:.45;transition:opacity .2s}
 
 .common summary{list-style:none;display:flex;align-items:center;justify-content:space-between;gap:12px;padding:18px 20px;font-weight:600;font-size:15.5px;cursor:pointer}
@@ -354,10 +355,13 @@ const d20 = b => "1d20" + (b >= 0 ? "+" : "") + b;
 /* ---------- числа, которые страница считает сама ---------- */
 const am        = a => Math.floor((CH.abilities[a] - 10) / 2);
 const pb        = () => CH.proficiencyBonus;
-const hasSkill  = id => CH.skills.includes(id);
+const isExpert  = id => (CH.expertise || []).includes(id);
+const hasSkill  = id => CH.skills.includes(id) || isExpert(id);
 const skill     = id => KB.skills.find(s => s.id === id);
-const skillB    = s => am(s.ability) + (hasSkill(s.id) ? pb() : 0);
-const saveB     = a => am(a) + (CH.saves.includes(a) ? pb() : 0);
+// экспертиза — двойное мастерство; ручные поправки из импорта прибавляются сверху
+const skillB    = s => am(s.ability) + (isExpert(s.id) ? 2 * pb() : hasSkill(s.id) ? pb() : 0) + ((CH.skillMods || {})[s.id] || 0);
+const saveB     = a => am(a) + (CH.saves.includes(a) ? pb() : 0) + ((CH.saveMods || {})[a] || 0);
+const initB     = () => CH.initiative ?? am("dex");
 const squares   = () => CH.speed / 5;
 const hitDieF   = () => CH.hitDice.die + (am("con") >= 0 ? "+" : "") + am("con");
 const hdLeft    = () => CH.hitDice.count - S.hitDiceUsed;
@@ -385,12 +389,14 @@ const snap  = () => { snapshot = JSON.parse(JSON.stringify(S)); };
 function card(f){
   let b = "";
   if (f.kind === "movement") b += `<div class="move"><b>${squares()}</b><span>клеток за ход<br>${CH.speed} футов</span></div>`;
-  b += `<p class="plain">${rich(f.plain)}</p>`;
+  if (f.plain) b += `<p class="plain">${rich(f.plain)}</p>`;
+  else if (!f.attack && !f.attackRef) b += `<p class="meta">Описания нет, уточни у мастера.</p>`;
   if (f.attack || f.attackRef){
     const a = attackOf(f);
     b += `<div class="chips">
       <span class="chip"><span class="cl">Попадание</span><b>${showF(d20(a.toHit))}</b></span>
-      <span class="chip"><span class="cl">Урон</span><b>${showF(a.damage)}</b><span class="cu">${esc(a.damageType)}</span></span>
+      <span class="chip"><span class="cl">Урон</span><b>${showF(a.damage)}</b>${a.damageType ? `<span class="cu">${esc(a.damageType)}</span>` : ""}</span>
+      ${a.alt ? `<span class="chip"><span class="cl">Двумя руками</span><b>${esc(a.alt.replace(/ двумя руками$/, ""))}</b></span>` : ""}
     </div>`;
     if (a.range) b += `<p class="meta">Дальность: ${rich(a.range)}</p>`;
   }
@@ -447,7 +453,7 @@ function panelStats(){
     </button>`;
   }).join("");
   const mine = KB.skills.filter(s => hasSkill(s.id)).map(s =>
-    `<div class="row"><div><b>${esc(s.name)}</b><p>${esc(s.plain)}</p></div><span class="val">${sg(skillB(s))}</span></div>`).join("");
+    `<div class="row"><div><b>${esc(s.name)}${isExpert(s.id) ? " · эксперт" : ""}</b><p>${esc(s.plain)}</p></div><span class="val">${sg(skillB(s))}</span></div>`).join("");
   const rest = KB.skills.filter(s => !hasSkill(s.id)).map(s =>
     `<div class="os"><span>${esc(s.name)}<small>${ABBR[s.ability]}</small></span><b>${sg(skillB(s))}</b></div>`).join("");
 
@@ -462,14 +468,14 @@ function panelStats(){
       <div class="card rows">${mine}</div>
       <h3 class="sub">Остальные</h3>
       <div class="card others">${rest}</div>
-      <p class="meta">Если ничего не ищешь специально, мастер сверяет спрятанное с числом ${10 + skillB(skill("perception"))}. Это твоё ${term("passive", "пассивное восприятие")}.</p>
+      <p class="meta">Если ничего не ищешь специально, мастер сверяет спрятанное с числом ${CH.passivePerception ?? 10 + skillB(skill("perception"))}. Это твоё ${term("passive", "пассивное восприятие")}.</p>
     </section>
     ${savesSec(false)}
     ${group("passive", CH.features.filter(f => f.kind === "passive" && scene(f) === "social"))}
-    <section class="sec">
+    ${(CH.languages || []).length ? `<section class="sec">
       <div class="sec-h"><h2>Языки</h2><p>На этих языках ${esc(CH.name)} говорит и читает.</p></div>
       <div class="langs">${CH.languages.map(l => `<span class="lang card">${esc(l)}</span>`).join("")}</div>
-    </section>
+    </section>` : ""}
   </section>`;
 }
 
@@ -493,7 +499,7 @@ function panelCombat(){
       </div>
       <div class="stats2">
         <div class="tile card"><span class="tl">${term("ac", "Класс доспеха")}</span><span class="tv">${CH.ac.value}</span><span class="ts">Врагу нужно ${CH.ac.value} или больше, чтобы попасть</span></div>
-        <div class="tile card"><span class="tl">${term("initiative", "Инициатива")}</span><span class="tv">${sg(am("dex"))}</span><span class="ts">В начале боя брось к20 и прибавь</span></div>
+        <div class="tile card"><span class="tl">${term("initiative", "Инициатива")}</span><span class="tv">${sg(initB())}</span><span class="ts">В начале боя брось к20 и прибавь</span></div>
       </div>
     </section>
     <div class="sec-h turn-h"><h2>Твой ход</h2><p>Тапни «Действие» или «Бонусное» и выбери, что делаешь. Выбранное гаснет до нового хода.</p></div>
@@ -565,8 +571,8 @@ function render(){
     </div>
     <div class="who">
       <h1>${esc(CH.name)}</h1>
-      <p class="pitch">${rich(CH.pitch)}</p>
-      <p class="bgline">Прошлое: ${esc(CH.background.name)}, ${esc(CH.background.note)}</p>
+      ${CH.pitch ? `<p class="pitch">${rich(CH.pitch)}</p>` : ""}
+      ${CH.background?.name ? `<p class="bgline">Прошлое: ${esc(CH.background.name)}${CH.background.note ? ", " + esc(CH.background.note) : ""}</p>` : ""}
     </div>
     <div class="quick" role="group" aria-label="Отдых">
       <button type="button" class="qbtn" data-act="short" aria-haspopup="dialog">Короткий отдых</button>
@@ -612,8 +618,10 @@ function refresh(){
     const l = usesLeft(f);
     const when = f.uses.recharge === "short" ? term("short-rest", "короткого отдыха") : term("long-rest", "длинного отдыха");
     el.innerHTML = `<div class="use-info"><span class="pips">${Array.from({ length: f.uses.max }, (_, i) => `<i class="${i < l ? "full" : ""}"></i>`).join("")}</span>
-        <span>${l > 0 ? "Готово" : "Потрачено"} · вернётся после ${when}</span></div>
-      <button type="button" class="btn ${l > 0 ? "primary" : "neutral"}" data-act="use" data-id="${f.id}">${l > 0 ? "Использовать" : "Вернуть"}</button>`;
+        <span>${f.uses.max > 1 ? `${l} из ${f.uses.max}` : l > 0 ? "Готово" : "Потрачено"} · вернётся после ${when}</span></div>
+      ${f.uses.max > 1
+        ? `<span class="use-btns">${l < f.uses.max ? `<button type="button" class="btn neutral" data-act="unuse" data-id="${f.id}">Вернуть</button>` : ""}${l > 0 ? `<button type="button" class="btn primary" data-act="use" data-id="${f.id}">Использовать</button>` : ""}</span>`
+        : `<button type="button" class="btn ${l > 0 ? "primary" : "neutral"}" data-act="use" data-id="${f.id}">${l > 0 ? "Использовать" : "Вернуть"}</button>`}`;
     $("#f-" + f.id).classList.toggle("spent", l <= 0);
   });
 
@@ -770,6 +778,12 @@ const H = {
       S.used[f.id] = Math.max(0, (S.used[f.id] || 0) - 1);
       if (S.turn.bonus && S.turn.bonus.id === f.id) S.turn.bonus = null;
     }
+  },
+
+  unuse: b => {
+    const f = byId[b.dataset.id];
+    S.used[f.id] = Math.max(0, (S.used[f.id] || 0) - 1);
+    if (S.turn.bonus && S.turn.bonus.id === f.id) S.turn.bonus = null;
   },
 
   // Панель хода

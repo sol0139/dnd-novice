@@ -1,0 +1,108 @@
+{
+  "format": "novice-dictionary/0.1",
+  "about": "Словарь для импорта: узнаём оружие, доспехи, классы, расы и языки по корням слов, как бы мастер их ни записал. stems — начала слов без окончаний, всё в нижнем регистре, ё заменена на е.",
+
+  "classes": [
+    { "id": "barbarian", "stems": ["варвар"],                 "hitDie": 12 },
+    { "id": "bard",      "stems": ["бард"],                   "hitDie": 8,  "caster": "full" },
+    { "id": "cleric",    "stems": ["жрец", "клерик"],         "hitDie": 8,  "caster": "full" },
+    { "id": "druid",     "stems": ["друид"],                  "hitDie": 8,  "caster": "full" },
+    { "id": "fighter",   "stems": ["воин", "боец"],           "hitDie": 10 },
+    { "id": "monk",      "stems": ["монах"],                  "hitDie": 8 },
+    { "id": "paladin",   "stems": ["паладин"],                "hitDie": 10, "caster": "half" },
+    { "id": "ranger",    "stems": ["следопыт", "рейнджер"],   "hitDie": 10, "caster": "half" },
+    { "id": "rogue",     "stems": ["плут", "разбойни"],       "hitDie": 8 },
+    { "id": "sorcerer",  "stems": ["чародей", "чародейк"],    "hitDie": 6,  "caster": "full" },
+    { "id": "warlock",   "stems": ["колдун"],                 "hitDie": 8,  "caster": "pact" },
+    { "id": "wizard",    "stems": ["волшебни", "маг"],        "hitDie": 6,  "caster": "full" },
+    { "id": "artificer", "stems": ["изобретател", "артифайс"],"hitDie": 8,  "caster": "half" }
+  ],
+
+  "races": [
+    { "stems": ["человек"],                        "speed": 30, "darkvision": 0 },
+    { "stems": ["полуэльф"],                       "speed": 30, "darkvision": 60 },
+    { "stems": ["полуорк"],                        "speed": 30, "darkvision": 60 },
+    { "stems": ["полурослик", "халфлинг"],         "speed": 25, "darkvision": 0 },
+    { "stems": ["эльф", "дроу"],                   "speed": 30, "darkvision": 60 },
+    { "stems": ["дварф"],                          "speed": 25, "darkvision": 60 },
+    { "stems": ["гном"],                           "speed": 25, "darkvision": 60 },
+    { "stems": ["тифлинг"],                        "speed": 30, "darkvision": 60 },
+    { "stems": ["драконорожд"],                    "speed": 30, "darkvision": 0 },
+    { "stems": ["аасимар"],                        "speed": 30, "darkvision": 60 },
+    { "stems": ["леонин"],                         "speed": 35, "darkvision": 60 },
+    { "stems": ["табакси"],                        "speed": 30, "darkvision": 60 },
+    { "stems": ["голиаф"],                         "speed": 30, "darkvision": 0 },
+    { "stems": ["орк"],                            "speed": 30, "darkvision": 60 },
+    { "stems": ["гоблин"],                         "speed": 30, "darkvision": 60 },
+    { "stems": ["кенку"],                          "speed": 30, "darkvision": 0 }
+  ],
+
+  "weapons": [
+    { "stems": ["боевой посох", "посох"],         "dmg": "1d6",  "type": "дробящий", "versatile": "1d8" },
+    { "stems": ["булав"],                         "dmg": "1d6",  "type": "дробящий" },
+    { "stems": ["дубин"],                         "dmg": "1d4",  "type": "дробящий" },
+    { "stems": ["кинжал"],                        "dmg": "1d4",  "type": "колющий",  "finesse": true, "thrown": "20/60" },
+    { "stems": ["метательн", "метат", "джавелин"],"dmg": "1d6",  "type": "колющий",  "thrown": "30/120" },
+    { "stems": ["копье кавалер", "длинное копье"],"dmg": "1d12", "type": "колющий" },
+    { "stems": ["копье"],                         "dmg": "1d6",  "type": "колющий",  "thrown": "20/60", "versatile": "1d8" },
+    { "stems": ["легкий молот"],                  "dmg": "1d4",  "type": "дробящий", "thrown": "20/60" },
+    { "stems": ["палица"],                        "dmg": "1d8",  "type": "дробящий" },
+    { "stems": ["ручной топор", "топорик"],       "dmg": "1d6",  "type": "рубящий",  "thrown": "20/60" },
+    { "stems": ["серп"],                          "dmg": "1d4",  "type": "рубящий" },
+    { "stems": ["легкий арбалет"],                "dmg": "1d8",  "type": "колющий",  "ranged": "80/320" },
+    { "stems": ["ручной арбалет"],                "dmg": "1d6",  "type": "колющий",  "ranged": "30/120" },
+    { "stems": ["тяжелый арбалет"],               "dmg": "1d10", "type": "колющий",  "ranged": "100/400" },
+    { "stems": ["дротик"],                        "dmg": "1d4",  "type": "колющий",  "finesse": true, "thrown": "20/60" },
+    { "stems": ["короткий лук"],                  "dmg": "1d6",  "type": "колющий",  "ranged": "80/320" },
+    { "stems": ["длинный лук"],                   "dmg": "1d8",  "type": "колющий",  "ranged": "150/600" },
+    { "stems": ["праща"],                         "dmg": "1d4",  "type": "дробящий", "ranged": "30/120" },
+    { "stems": ["алебард"],                       "dmg": "1d10", "type": "рубящий" },
+    { "stems": ["боевая кирк", "кирк"],           "dmg": "1d8",  "type": "колющий" },
+    { "stems": ["боевой молот"],                  "dmg": "1d8",  "type": "дробящий", "versatile": "1d10" },
+    { "stems": ["боевой топор"],                  "dmg": "1d8",  "type": "рубящий",  "versatile": "1d10" },
+    { "stems": ["глеф"],                          "dmg": "1d10", "type": "рубящий" },
+    { "stems": ["двуручный меч"],                 "dmg": "2d6",  "type": "рубящий" },
+    { "stems": ["длинный меч", "полуторн"],                   "dmg": "1d8",  "type": "рубящий",  "versatile": "1d10" },
+    { "stems": ["кнут"],                          "dmg": "1d4",  "type": "рубящий",  "finesse": true },
+    { "stems": ["короткий меч"],                  "dmg": "1d6",  "type": "колющий",  "finesse": true },
+    { "stems": ["молот"],                         "dmg": "2d6",  "type": "дробящий" },
+    { "stems": ["моргенштерн"],                   "dmg": "1d8",  "type": "колющий" },
+    { "stems": ["пика"],                          "dmg": "1d10", "type": "колющий" },
+    { "stems": ["рапир"],                         "dmg": "1d8",  "type": "колющий",  "finesse": true },
+    { "stems": ["секир"],                         "dmg": "1d12", "type": "рубящий" },
+    { "stems": ["скимитар", "ятаган"],            "dmg": "1d6",  "type": "рубящий",  "finesse": true },
+    { "stems": ["трезуб"],                        "dmg": "1d6",  "type": "колющий",  "thrown": "20/60", "versatile": "1d8" },
+    { "stems": ["цеп"],                           "dmg": "1d8",  "type": "дробящий" },
+    { "stems": ["когт"],                          "dmg": "1d4",  "type": "рубящий" },
+    { "stems": ["безоружн"],                      "dmg": "1",    "type": "дробящий" }
+  ],
+
+  "armor": [
+    { "stems": ["кольчужная рубах"],      "name": "Кольчужная рубаха",  "base": 13, "kind": "medium" },
+    { "stems": ["полулат"],               "name": "Полулаты",           "base": 15, "kind": "medium", "stealthDisadvantage": true },
+    { "stems": ["стеган"],                "name": "Стёганый доспех",    "base": 11, "kind": "light",  "stealthDisadvantage": true },
+    { "stems": ["проклепан", "клепан"],   "name": "Проклёпанная кожа",  "base": 12, "kind": "light" },
+    { "stems": ["кожан"],                 "name": "Кожаный доспех",     "base": 11, "kind": "light" },
+    { "stems": ["шкурн"],                 "name": "Шкурный доспех",     "base": 12, "kind": "medium" },
+    { "stems": ["чешуйчат"],              "name": "Чешуйчатый доспех",  "base": 14, "kind": "medium", "stealthDisadvantage": true },
+    { "stems": ["кираса"],                "name": "Кираса",             "base": 14, "kind": "medium" },
+    { "stems": ["колечн"],                "name": "Колечный доспех",    "base": 14, "kind": "heavy",  "stealthDisadvantage": true },
+    { "stems": ["кольчуг"],               "name": "Кольчуга",           "base": 16, "kind": "heavy",  "stealthDisadvantage": true },
+    { "stems": ["наборн"],                "name": "Наборный доспех",    "base": 17, "kind": "heavy",  "stealthDisadvantage": true },
+    { "stems": ["латы"],                  "name": "Латы",               "base": 18, "kind": "heavy",  "stealthDisadvantage": true },
+    { "stems": ["щит"],                   "name": "Щит",                "bonus": 2,  "kind": "shield" }
+  ],
+
+  "languages": [
+    "общий", "всеобщий", "эльфийский", "дварфийский", "гигантский", "великаний", "гномий", "гоблинский",
+    "полуросликов", "орочий", "бездны", "небесный", "драконий", "глубинная речь", "инфернальный", "адский",
+    "первичный", "сильван", "подземный", "воровской жаргон", "друидический", "леонинов", "аквана", "ауран", "игнан", "терран"
+  ],
+
+  "damageTypes": {
+    "колющ": "колющий", "рубящ": "рубящий", "дробящ": "дробящий", "дол.": "дробящий", "дроб": "дробящий",
+    "излуч": "излучением", "огн": "огнём", "холод": "холодом", "молни": "молнией", "электр": "электричеством",
+    "яд": "ядом", "кислот": "кислотой", "некрот": "некротической энергией", "психич": "психической энергией",
+    "силов": "силовым полем", "звук": "звуком", "гром": "звуком"
+  }
+}
