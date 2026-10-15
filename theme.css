@@ -1,0 +1,72 @@
+/* Общая тема сайта: цвета светлой и тёмной темы, шрифты, базовые правила.
+   Подключается на всех страницах. Цвета — в стиле AutoOne. */
+
+/* Базовый сброс: отступы под вырезы телефона, без полей у body */
+:root{padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}
+body{margin:0}
+img{max-width:100%}
+
+:root{
+  --bg:#F5F5F5;
+  --surface:#FFFFFF;
+  --neutral:#F5F5F5;
+  --glass:#EFF2F7;
+  --fg:#0D0D10;
+  --fg-2:#232323;
+  --fg-3:#6E7079;
+  --line:#ECECF0;
+  --accent:#2EB41B;
+  --accent-ink:#1F8A12;
+  --on-accent:#FFFFFF;
+  --glow:#D5F4D2;
+  --danger:#E5484D;
+  --k-action:#3E63DD;
+  --k-bonus:#C98200;
+  --k-reaction:#D6409F;
+  --k-movement:#0E9F8E;
+  --k-passive:#8B8D98;
+  --shadow:0 1.33px 6.65px rgba(8,8,38,.02),0 4.47px 22.34px rgba(8,8,38,.03),0 20px 100px rgba(8,8,38,.05);
+  --shadow-float:0 10px 30px -10px rgba(8,8,38,.22),0 1px 3px rgba(8,8,38,.06);
+  --scrim:rgba(0,0,0,.4);
+  --toast-bg:#0D0D10;
+  --toast-fg:#FFFFFF;
+  --on-k:#FFFFFF;
+  --f-head:"Unbounded","Arial Black",system-ui,sans-serif;
+  --f-body:"Onest",system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;
+  --f-btn:"Wix Madefor Text","Onest",system-ui,sans-serif;
+}
+@media (prefers-color-scheme: dark){
+  :root:not([data-theme="light"]){
+    --bg:#0D0D10; --surface:#17171C; --neutral:#212128; --glass:#25252D; --fg:#F4F4F6; --fg-2:#E2E2E7; --fg-3:#9D9FAA; --line:#2A2A32;
+    --accent:#3BC427; --accent-ink:#5BD848; --on-accent:#07140A; --glow:rgba(46,180,27,.24); --danger:#FF6B6F;
+    --k-action:#7E9BFF; --k-bonus:#F2B544; --k-reaction:#F07AC0; --k-movement:#3DD3BE; --k-passive:#A3A5B0;
+    --shadow:0 0 0 1px rgba(255,255,255,.04),0 12px 30px -16px rgba(0,0,0,.8);
+    --shadow-float:0 12px 34px -10px rgba(0,0,0,.8),0 0 0 1px rgba(255,255,255,.07);
+    --scrim:rgba(0,0,0,.62); --toast-bg:#F4F4F6; --toast-fg:#0D0D10; --on-k:#0D0D10;
+    color-scheme:dark;
+  }
+}
+:root[data-theme="dark"]{
+  --bg:#0D0D10; --surface:#17171C; --neutral:#212128; --glass:#25252D; --fg:#F4F4F6; --fg-2:#E2E2E7; --fg-3:#9D9FAA; --line:#2A2A32;
+  --accent:#3BC427; --accent-ink:#5BD848; --on-accent:#07140A; --glow:rgba(46,180,27,.24); --danger:#FF6B6F;
+  --k-action:#7E9BFF; --k-bonus:#F2B544; --k-reaction:#F07AC0; --k-movement:#3DD3BE; --k-passive:#A3A5B0;
+  --shadow:0 0 0 1px rgba(255,255,255,.04),0 12px 30px -16px rgba(0,0,0,.8);
+  --shadow-float:0 12px 34px -10px rgba(0,0,0,.8),0 0 0 1px rgba(255,255,255,.07);
+  --scrim:rgba(0,0,0,.62); --toast-bg:#F4F4F6; --toast-fg:#0D0D10; --on-k:#0D0D10;
+  color-scheme:dark;
+}
+
+*,*::before,*::after{box-sizing:border-box}
+[hidden]{display:none!important}
+html{-webkit-text-size-adjust:100%}
+body{
+  background:radial-gradient(ellipse 120% 380px at 50% -60px,var(--glow) 0%,transparent 72%) no-repeat,var(--bg);
+  color:var(--fg);font-family:var(--f-body);font-size:16px;line-height:1.4;
+}
+body::before{content:"";position:fixed;inset:0 0 auto;height:env(safe-area-inset-top,0px);z-index:10;background:var(--bg)}
+h1,h2,h3,h4{margin:0;text-wrap:balance}
+p,dl,dd,ul{margin:0}
+ul{padding:0;list-style:none}
+button{font:inherit;color:inherit;cursor:pointer;-webkit-tap-highlight-color:transparent}
+:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+svg.i{width:24px;height:24px;fill:none;stroke:currentColor;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round;flex:none}

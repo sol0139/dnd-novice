@@ -3,6 +3,7 @@
   "edition": "5e-2014",
   "id": "mirta",
   "name": "Мирта",
+  "pronoun": "she",
   "pitch": "Держит щит, рубит мечом и поднимается после удара, который уложил бы любого.",
   "race": { "id": "half-orc", "name": "Полуорк" },
   "class": { "id": "fighter", "name": "Воин", "level": 1 },
