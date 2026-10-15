@@ -460,7 +460,7 @@ function spellCard(sp){
   if (sp.heal) chips.push(`<span class="chip"><span class="cl">Лечит</span><b>${showF(sp.heal)}</b><span class="cu">хитов</span></span>`);
   if (sp.sleep) chips.push(`<span class="chip"><span class="cl">Усыпляет</span><b>${showF(sp.sleep)}</b><span class="cu">хитов существ</span></span>`);
   if (chips.length) b += `<div class="chips">${chips.join("")}</div>`;
-  b += `<p class="meta">Дальность: ${esc(sp.range)} · длится: ${esc(sp.dur)}${sp.upcast ? `. ${esc(sp.upcast)}` : ""}${sp.healNote ? ` ${esc(sp.healNote)}` : ""}</p>`;
+  b += `<p class="meta">Дальность: ${esc(sp.range)} · длится: ${esc(sp.dur)}${sp.upcast ? `. ${esc(sp.upcast)}` : ""}${sp.healNote ? ` ${esc(sp.healNote)}` : ""}${sp.castNote ? ` ${esc(sp.castNote)}` : ""}</p>`;
   if (sp.level > 0 && slotLevels().length) b += `<div class="cast" id="c-${sp.id}"></div>`;
   return `<article class="ab card" data-kind="${sp.kind}" id="s-${sp.id}">
     <div class="ab-h"><h3>${esc(sp.name)}</h3>${sp.source ? `<span class="src">${esc(sp.source)}</span>` : ""}</div>${b}

@@ -6,7 +6,7 @@
    ============================================================ */
 import {
   normalize, buildCharacter, randomChoices, randomName, rollStats, assignStats,
-  abilityBonuses, finalAbilities, skillInfo, casterInfo, SKILL_NAMES
+  abilityBonuses, finalAbilities, skillInfo, casterInfo, raceCantripInfo, SKILL_NAMES
 } from "/builder.js";
 
 let R = null, SPL = null, TPL = null;   // rules.json, spells.json, templates.json
@@ -169,10 +169,10 @@ export function viewBuild(ctx){
     const slots = Object.entries(ci.slots).map(([l, n]) => `${n} × ${l} круг`).join(", ");
     spellSec = sec("Заклинания", `Ячейки на этом уровне: ${slots}${ci.type === "pact" ? ", возвращаются после короткого отдыха" : ""}.`, body, "cr-spells");
   }
-  const rc = (sub && sub.cantrip) || race.cantrip;
-  if (rc && rc.pick){
-    spellSec += sec("Заговор расы", `${esc(sub ? sub.name : race.name)} знает один заговор.`,
-      `<div class="pick">${rc.pick.map(id => pk("crRaceCantrip", id, esc(SPL.spells[id].name), d.raceCantrip === id)).join("")}</div>`);
+  const rci = raceCantripInfo(R, SPL, d);
+  if (rci && !rci.fixed){
+    spellSec += sec("Заговор расы", `${esc(sub ? sub.name : race.name)} знает ещё один заговор, сверх заговоров класса.`,
+      `<div class="pick">${rci.list.map(id => d.cantrips.includes(id) ? `<span class="pk locked">${esc(SPL.spells[id].name)}</span>` : pk("crRaceCantrip", id, esc(SPL.spells[id].name), d.raceCantrip === id)).join("")}</div>`);
   }
 
   /* --- языки --- */

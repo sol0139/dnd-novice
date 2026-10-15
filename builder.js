@@ -124,6 +124,15 @@ export function casterInfo(rules, spellsData, ch, abilities){
            always: uniq(always), cantripPool: pool("0"), leveledPool: leveled };
 }
 
+/* Заговор от расы: фиксированный (тифлинг, дроу, лесной гном, аасимар) или на выбор (высший эльф — любой заговор волшебника) */
+export function raceCantripInfo(rules, spellsData, ch){
+  const P = parts(rules, ch);
+  const rc = (P.sub && P.sub.cantrip) || P.race.cantrip;
+  if (!rc) return null;
+  const list = rc.fixed ? [rc.fixed] : rc.pickFrom ? (spellsData.classes[rc.pickFrom] || {})["0"] || [] : rc.pick || [];
+  return { ability: rc.ability, fixed: rc.fixed || null, list };
+}
+
 /* ---------- характеристики ---------- */
 export function rollStats(rnd = Math.random){
   return Array.from({ length: 6 }, () => {
@@ -231,13 +240,15 @@ export function normalize(rules, spellsData, input, rnd = Math.random){
   // заклинания: сначала самые популярные у этого класса
   const ab = finalAbilities(rules, ch);
   const ci = casterInfo(rules, spellsData, ch, ab);
+  const rci = raceCantripInfo(rules, spellsData, ch);
+  const raceTaken = rci ? (rci.fixed || (rci.list.includes(ch.raceCantrip) ? ch.raceCantrip : null)) : null;
   if (ci){
     const pick = (pool, n, wanted, fillUp) => {
       const out = uniq((wanted || []).filter(id => pool.includes(id)));
       if (fillUp) for (const id of pool){ if (out.length >= n) break; if (!out.includes(id)) out.push(id); }
       return out.slice(0, n);
     };
-    ch.cantrips = pick(ci.cantripPool, ci.cantrips, ch.cantrips, on("cantrips"));
+    ch.cantrips = pick(ci.cantripPool.filter(id => id !== raceTaken), ci.cantrips, ch.cantrips, on("cantrips"));
     let wanted = (ch.spells || []).filter(id => ci.leveledPool.includes(id));
     if (!wanted.length && ci.maxLevel >= 2 && on("spells")){
       // по умолчанию часть заклинаний — второго круга
@@ -249,10 +260,9 @@ export function normalize(rules, spellsData, input, rnd = Math.random){
     ch.spells = pick(ci.leveledPool, ci.count, wanted, on("spells"));
   } else { ch.cantrips = []; ch.spells = []; }
 
-  // заговор расы
-  const rc = (P.sub && P.sub.cantrip) || P.race.cantrip;
-  if (rc && rc.pick){
-    if (!rc.pick.includes(ch.raceCantrip)) ch.raceCantrip = rc.pick.find(id => !ch.cantrips.includes(id)) || rc.pick[0];
+  // заговор расы идёт сверх заговоров класса
+  if (rci && !rci.fixed){
+    if (!rci.list.includes(ch.raceCantrip) || ch.cantrips.includes(ch.raceCantrip)) ch.raceCantrip = rci.list.find(id => !ch.cantrips.includes(id)) || rci.list[0];
   } else delete ch.raceCantrip;
 
   // языки
@@ -344,7 +354,7 @@ export function buildCharacter(rules, spellsData, input){
       if (a.kind === "shield"){ shield = true; equipment.push({ name: a.name, note: "+2 к [[ac|КД]]. Занимает руку." }); }
       else {
         bodyArmor = a;
-        equipment.push({ name: a.name, note: `[[ac|КД]] ${a.base}${a.kind === "light" ? " + Ловкость" : a.kind === "medium" ? " + Ловкость (не больше +2)" : ""}.${a.stealthDisadvantage ? " Прятаться в нём — с [[advantage|помехой]]." : ""}`,
+        equipment.push({ name: a.name, note: `[[ac|КД]] ${a.base}${a.kind === "light" ? " + Ловкость" : a.kind === "medium" ? " + Ловкость (не больше +2)" : ""}.${a.stealthDisadvantage ? " Прятаться в таком доспехе — с [[advantage|помехой]]." : ""}`,
           ...(a.stealthDisadvantage ? { stealthDisadvantage: true } : {}) });
       }
     } else if (rules.gear[id]){
@@ -381,6 +391,8 @@ export function buildCharacter(rules, spellsData, input){
   /* --- скорость --- */
   let speed = (sub && sub.speed) || race.speed;
   if (cls.id === "monk" && lvl >= 2 && !bodyArmor && !shield) speed += 10;
+  const heavyTooHeavy = bodyArmor && bodyArmor.str && abilities.str < bodyArmor.str && race.id !== "dwarf";
+  if (heavyTooHeavy) speed -= 10;
 
   /* --- навыки --- */
   const si = skillInfo(rules, ch);
@@ -477,7 +489,8 @@ export function buildCharacter(rules, spellsData, input){
     plain: "Враг выходит из соседней клетки — успеваешь ударить его вслед.", attackRef: mainMelee });
   const raceName = (sub ? sub.name : race.name);
   features.push({ id: "movement", kind: "movement", scene: "combat", name: "Скорость", source: raceName.toLowerCase(),
-    plain: "Движение можно делить: шаг, удар, ещё пара шагов. Действие «Рывок» удваивает его на один ход." + (race.speedNote ? " " + race.speedNote : "") });
+    plain: "Движение можно делить: шаг, удар, ещё пара шагов. Действие «Рывок» удваивает его на один ход." + (race.speedNote ? " " + race.speedNote : "")
+      + (heavyTooHeavy ? ` ${bodyArmor.name} тяжела для твоей Силы (нужно ${bodyArmor.str}): скорость на 2 клетки меньше, уже учтено.` : "") });
   const raceFeats = [...race.features, ...((sub && sub.features) || [])];
   const darkvisionFt = sub && sub.darkvision;
   raceFeats.filter(f => (f.level || 1) <= lvl).forEach(f => {
@@ -496,8 +509,9 @@ export function buildCharacter(rules, spellsData, input){
   /* --- заклинания --- */
   const spells = [];
   const agon = cls.agonizing && lvl >= cls.agonizing ? M.cha : 0;
-  const spellEntry = (id, abil, extra = {}) =>
-    makeSpell(spellsData, id, { m: M[abil], pb, she, agonizing: agon, healBonus: !!(subcl && subcl.healBonus), extra });
+  const pactLevel = cls.caster && cls.caster.type === "pact" ? Math.max(...Object.keys(SLOTS.pact[lvl - 1]).map(Number)) : 0;
+  const spellEntry = (id, abil, extra = {}, fromClass = false) =>
+    makeSpell(spellsData, id, { m: M[abil], pb, she, agonizing: agon, healBonus: !!(subcl && subcl.healBonus), castLevel: fromClass ? pactLevel : 0, extra });
   const ci = casterInfo(rules, spellsData, ch, abilities);
   let spellcasting = null;
   if (ci){
@@ -505,17 +519,19 @@ export function buildCharacter(rules, spellsData, input){
     spellcasting = { ability: ci.ability, attack: pb + m, dc: 8 + pb + m, slots: ci.slots, recharge: ci.type === "pact" ? "short" : "long",
       prepared: !!ci.prepared, source: clsName };
     ch.cantrips.forEach(id => { const e = spellEntry(id, ci.ability); if (e) spells.push(e); });
-    ci.always.forEach(id => { const e = spellEntry(id, ci.ability, { always: true }); if (e) spells.push(e); });
-    ch.spells.forEach(id => { const e = spellEntry(id, ci.ability); if (e) spells.push(e); });
+    ci.always.forEach(id => { const e = spellEntry(id, ci.ability, { always: true }, true); if (e) spells.push(e); });
+    ch.spells.forEach(id => { const e = spellEntry(id, ci.ability, {}, true); if (e) spells.push(e); });
   }
-  const rc = (sub && sub.cantrip) || race.cantrip;
-  if (rc){
-    const id = rc.fixed || ch.raceCantrip;
-    if (id && !spells.some(s => s.id === id)){ const e = spellEntry(id, rc.ability, { source: raceName.toLowerCase() }); if (e) spells.push(e); }
+  const rci = raceCantripInfo(rules, spellsData, ch);
+  if (rci){
+    const id = rci.fixed || ch.raceCantrip;
+    if (id && !spells.some(s => s.id === id)){ const e = spellEntry(id, rci.ability, { source: raceName.toLowerCase() }); if (e) spells.push(e); }
   }
 
   /* --- языки --- */
-  const languages = uniq([...race.languages, ...ch.languages, ...(subcl && subcl.colors ? ["Драконий"] : [])]);
+  const enemyLang = cls.id === "ranger" && rules.enemyLang ? rules.enemyLang[ch.enemy] : null;
+  const languages = uniq([...race.languages, ...ch.languages, ...(subcl && subcl.colors ? ["Драконий"] : []), ...(enemyLang ? [enemyLang] : [])]);
+  const tools = [cls.tools, bg.tools].filter(Boolean).join("; ");
 
   const character = {
     format: "novice-sheet/0.3", edition: "5e-2014",
@@ -529,7 +545,7 @@ export function buildCharacter(rules, spellsData, input){
     ac: { value: ac, why }, speed,
     saves: [...cls.saves], skills, expertise: [...ch.expertise],
     ...(cls.halfProf && lvl >= cls.halfProf ? { halfProf: true } : {}),
-    languages, ...(bg.tools ? { tools: bg.tools } : {}), features, equipment,
+    languages, ...(tools ? { tools } : {}), features, equipment,
     ...(spellcasting ? { spellcasting } : {}),
     ...(spells.length ? { spells } : {}),
     source: { app: "builder", choices: compactChoices(ch) }
@@ -540,9 +556,20 @@ export function buildCharacter(rules, spellsData, input){
 /* Карточка заклинания для листа: числа уже посчитаны.
    m — модификатор колдовской характеристики, agonizing — добавка к Мистическому заряду,
    healBonus — «Ученик жизни» жреца. Используется и конструктором, и импортом из LSS. */
-export function makeSpell(spellsData, id, { m = 0, pb = 2, she = false, agonizing = 0, healBonus = false, extra = {} } = {}){
-  const s = spellsData.spells[id];
-  if (!s) return null;
+// Добавить кубы за каждый круг сверху: «2d10» + 1×«1d10» → «3d10»
+function addDice(base, up, times){
+  if (!up || times <= 0) return base;
+  const b = /^(\d+)d(\d+)(.*)$/.exec(base), u = /^(\d+)d(\d+)$/.exec(up);
+  if (b && u && b[2] === u[2]) return `${+b[1] + times * +u[1]}d${b[2]}${b[3]}`;
+  return `${base}+${times * +(u ? u[1] : 1)}d${u ? u[2] : up}`;
+}
+export function makeSpell(spellsData, id, { m = 0, pb = 2, she = false, agonizing = 0, healBonus = false, castLevel = 0, extra = {} } = {}){
+  const s0 = spellsData.spells[id];
+  if (!s0) return null;
+  // Колдун творит заклинание ячейкой договора: урон и лечение сразу на её круг
+  const lift = s0.level > 0 && castLevel > s0.level ? castLevel - s0.level : 0;
+  const s = lift ? { ...s0, dmg: addDice(s0.dmg, s0.up, lift), heal: s0.heal && addDice(s0.heal, s0.upHeal, lift),
+    sleep: s0.sleep && addDice(s0.sleep, s0.upSleep, lift), count: s0.count && s0.upCount ? s0.count + lift * s0.upCount : s0.count } : s0;
   const ctx = { she, num: { pb }, str: {} };
   const atk = pb + m, dc = 8 + pb + m;
   const e = { id, name: s.name, level: s.level, kind: CAST_KIND[s.cast] || "action", plain: fill(s.plain, ctx), range: s.range, dur: s.dur };
@@ -557,10 +584,11 @@ export function makeSpell(spellsData, id, { m = 0, pb = 2, she = false, agonizin
   else if (dmg) e.dmg = { dice: dmg, type: s.dtype, half: !!s.half };
   if (s.save) e.save = { ab: s.save, dc, half: !!s.half };
   if (s.sleep) e.sleep = s.sleep;
+  if (lift && (s.dmg !== s0.dmg || s.heal !== s0.heal || s.sleep !== s0.sleep || s.count !== s0.count)) e.castNote = `Колдуешь ячейкой ${castLevel} круга: числа уже на этот круг.`;
   if (s.heal){
     let h = s.healMod ? withMod(s.heal, m) : s.heal;
     if (healBonus && s.level >= 1){
-      const b = 2 + s.level;
+      const b = 2 + Math.max(s.level, castLevel);
       h = h.replace(/([+-]\d+)?$/, x => { const v = (x ? +x : 0) + b; return v ? (v > 0 ? "+" : "-") + Math.abs(v) : ""; });
       e.healNote = `Ученик жизни: +${b} уже учтено.`;
     }
