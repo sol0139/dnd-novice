@@ -1,0 +1,390 @@
+<!doctype html>
+<html lang="ru">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="robots" content="noindex,nofollow">
+<title>Статистика · DnD Kids</title>
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='9' fill='%232EB41B'/%3E%3Cpath transform='translate%287.4 6.8%29 scale%281.15%29' fill='white' d='M3.33594 6.72062L0.0375 11.5922C-0.05875 11.7484 0.040625 11.9516 0.222813 11.9716L6.73094 12.6613L3.33594 6.72062ZM0.231562 9.85719L2.58437 6.03375L0.189375 4.59688C0.105937 4.54688 0 4.60687 0 4.70406V9.79187C0 9.91781 0.165312 9.96469 0.231562 9.85719ZM0.570312 13.2375L6.64531 15.9769C6.81094 16.0534 7 15.9322 7 15.75V13.6978L0.639063 13.0009C0.5 12.9853 0.444375 13.1756 0.570312 13.2375ZM3.10844 5.18188L5.60625 0.715C5.74187 0.494375 5.49406 0.238437 5.26937 0.366875L0.556562 3.44844C0.479375 3.49906 0.481875 3.61281 0.560625 3.66031L3.10844 5.18188ZM7.5 5.5H10.9128L7.92594 0.238125C7.82813 0.079375 7.66406 0 7.5 0C7.33594 0 7.17187 0.079375 7.07406 0.238125L4.08719 5.5H7.5ZM14.8106 4.59688L12.4156 6.03406L14.7684 9.8575C14.8344 9.965 15 9.91812 15 9.79187V4.70406C15 4.60687 14.8941 4.54688 14.8106 4.59688ZM11.8916 5.18188L14.4394 3.66C14.5184 3.6125 14.5206 3.49875 14.4434 3.44812L9.73063 0.366875C9.50594 0.238437 9.25813 0.494375 9.39375 0.715L11.8916 5.18188ZM14.3609 13.0009L8 13.6975V15.7497C8 15.9322 8.18906 16.0531 8.35469 15.9766L14.4297 13.2372C14.5556 13.1756 14.5 12.9853 14.3609 13.0009ZM11.6641 6.72062L8.26937 12.6613L14.7775 11.9716C14.9597 11.9512 15.0591 11.7484 14.9628 11.5922L11.6641 6.72062ZM7.5 6.5H4.36156L7.5 11.9922L10.6384 6.5H7.5Z'/%3E%3C/svg%3E">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Onest:wght@400;500;600&family=Unbounded:wght@500;600&family=Wix+Madefor+Text:wght@600&display=swap">
+<link rel="stylesheet" href="/theme.css">
+<style>
+/* Статистика для владельца сайта. Цвета берём из темы сайта, для графиков — один зелёный,
+   проверенный на контраст: на светлом фоне он ниже 3:1, поэтому у столбиков всегда есть подписи и таблица. */
+:root{--mark:#2EB41B;--mark-soft:color-mix(in srgb,var(--mark) 14%,transparent)}
+@media (prefers-color-scheme: dark){:root:not([data-theme="light"]){--mark:#2BA81A}}
+:root[data-theme="dark"]{--mark:#2BA81A}
+
+.wrap{max-width:1100px;margin:0 auto;padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px));
+  padding-block:12px calc(48px + env(safe-area-inset-bottom,0px));display:flex;flex-direction:column;gap:20px}
+.loading{padding-block:38vh 0;text-align:center;color:var(--fg-3);font-size:15px}
+.top-row{display:flex;align-items:center;justify-content:space-between;gap:12px;min-height:48px;flex-wrap:wrap}
+.brand{display:inline-flex;align-items:center;gap:10px;font-family:var(--f-head);font-weight:500;font-size:16px;letter-spacing:-.3px;color:var(--fg);text-decoration:none}
+.brand-mark{width:34px;height:34px;border-radius:11px;background:var(--accent);display:grid;place-items:center;color:#fff;flex:none}
+.brand-mark svg{width:19px;height:20px;fill:currentColor}
+.brand small{font-family:var(--f-body);font-weight:500;font-size:13px;color:var(--fg-3);margin-left:2px}
+.top-btns{display:flex;align-items:center;gap:8px}
+.card{background:var(--surface);border-radius:24px;box-shadow:var(--shadow)}
+.btn{display:inline-flex;align-items:center;justify-content:center;gap:8px;min-height:44px;padding:10px 18px;border:0;border-radius:18px;
+  font-family:var(--f-btn);font-weight:600;font-size:15px;letter-spacing:-.15px;text-decoration:none;cursor:pointer}
+.btn:active{transform:scale(.97)}
+.btn.primary{background:var(--accent);color:var(--on-accent)}
+.btn.neutral{background:var(--glass);color:var(--fg)}
+.btn[disabled]{opacity:.6;cursor:progress}
+.btn svg{width:18px;height:18px;fill:none;stroke:currentColor;stroke-width:1.9;stroke-linecap:round;stroke-linejoin:round}
+.meta{font-size:13.5px;line-height:1.45;color:var(--fg-3)}
+h1{font-family:var(--f-head);font-weight:600;font-size:30px;line-height:1.1;letter-spacing:-.5px}
+h2{font-family:var(--f-head);font-weight:500;font-size:18px;line-height:1.2;letter-spacing:-.4px}
+.alert{padding:12px 14px;border-radius:16px;background:color-mix(in srgb,var(--danger) 11%,var(--surface));font-size:14.5px;line-height:1.4}
+
+/* вход */
+.login{max-width:400px;width:100%;margin:12vh auto 0;padding:24px;display:flex;flex-direction:column;gap:14px}
+.fld{display:flex;flex-direction:column;gap:6px}
+.fld span{font-size:13px;color:var(--fg-3)}
+.fld input{height:48px;padding:0 14px;border:0;border-radius:14px;background:var(--neutral);color:var(--fg);font:inherit;font-size:16px}
+
+/* главная цифра и плитки */
+.head{display:flex;align-items:flex-end;justify-content:space-between;gap:16px;flex-wrap:wrap}
+.hero-num{display:flex;flex-direction:column;gap:4px}
+.hero-num .lbl{font-size:14px;font-weight:500;color:var(--fg-3)}
+.hero-num b{font-family:var(--f-body);font-weight:600;font-size:64px;line-height:1;letter-spacing:-2px}
+.delta{font-size:14px;font-weight:600;color:var(--accent-ink)}
+.delta.flat{color:var(--fg-3);font-weight:500}
+.tiles{display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:10px}
+.tile{padding:16px 18px;display:flex;flex-direction:column;gap:4px;min-width:0}
+.tile .lbl{font-size:13px;color:var(--fg-3)}
+.tile b{font-family:var(--f-body);font-weight:600;font-size:30px;line-height:1.1;letter-spacing:-.6px}
+.tile small{font-size:12.5px;line-height:1.35;color:var(--fg-3)}
+
+/* карточки с графиками */
+.grid2{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,420px),1fr));gap:12px}
+.chart{padding:18px 20px 16px;display:flex;flex-direction:column;gap:10px;min-width:0}
+.chart-h{display:flex;align-items:baseline;justify-content:space-between;gap:10px;flex-wrap:wrap}
+.chart svg{display:block;width:100%;height:auto;overflow:visible}
+.chart .gl{stroke:var(--line);stroke-width:1}
+.chart .base{stroke:var(--axis,color-mix(in srgb,var(--fg-3) 45%,transparent));stroke-width:1}
+.chart .tick{fill:var(--fg-3);font-size:12.5px;font-family:var(--f-body);font-variant-numeric:tabular-nums}
+.chart .val{fill:var(--fg-2);font-size:13px;font-weight:600;font-family:var(--f-body)}
+.chart .bar{fill:var(--mark);pointer-events:none}
+.chart .val,.chart .tick{pointer-events:none}
+.chart .hit{fill:transparent;cursor:default;outline:none}
+.chart .hit:hover + .bar,.chart .hit:focus-visible + .bar{fill:color-mix(in srgb,var(--mark) 78%,var(--fg))}
+.chart .hit:focus-visible{stroke:var(--fg-3);stroke-width:1}
+.empty-chart{padding:26px 0;text-align:center;font-size:14px;color:var(--fg-3)}
+/* горизонтальные полосы */
+.hb{display:flex;flex-direction:column;gap:6px}
+.hb-row{display:grid;grid-template-columns:minmax(0,13em) minmax(0,1fr) 3em;align-items:center;gap:10px;font-size:14px;padding:2px 0;border-radius:8px;outline:none}
+.hb-row:focus-visible{box-shadow:0 0 0 2px var(--fg-3)}
+.hb-row > span{line-height:1.3;color:var(--fg-2);overflow-wrap:anywhere}
+.hb-track{height:12px;position:relative}
+.hb-track i{position:absolute;inset:0 auto 0 0;width:var(--w);min-width:3px;border-radius:0 4px 4px 0;background:var(--mark)}
+.hb-row:hover .hb-track i{background:color-mix(in srgb,var(--mark) 78%,var(--fg))}
+.hb-row b{font-weight:600;font-size:13.5px;text-align:right;font-variant-numeric:tabular-nums;color:var(--fg)}
+details.tv summary{cursor:pointer;font-size:13px;color:var(--fg-3);width:max-content}
+details.tv table{margin-top:8px}
+
+/* таблицы */
+.tblwrap{overflow-x:auto;-webkit-overflow-scrolling:touch;margin:0 -4px;padding:0 4px}
+table{width:100%;border-collapse:collapse;font-size:14px}
+th{text-align:left;font-weight:500;font-size:12.5px;color:var(--fg-3);padding:8px 10px;border-bottom:1px solid var(--line);white-space:nowrap}
+td{padding:10px;border-bottom:1px solid var(--line);vertical-align:middle;white-space:nowrap}
+tr:last-child td{border-bottom:0}
+td.n,th.n{text-align:right;font-variant-numeric:tabular-nums}
+.who{display:flex;align-items:center;gap:10px;min-width:0}
+.who img,.who .ph{flex:none;width:32px;height:32px;border-radius:50%;object-fit:cover;background:var(--neutral)}
+.who b{font-weight:600;overflow:hidden;text-overflow:ellipsis;max-width:14em}
+.role{display:inline-block;margin-top:2px;font-size:11.5px;font-weight:600;padding:1px 7px;border-radius:7px;background:var(--neutral);color:var(--fg-3)}
+.role.m{background:color-mix(in srgb,var(--accent) 15%,transparent);color:var(--accent-ink)}
+.role.p{background:color-mix(in srgb,var(--k-action) 14%,transparent);color:var(--k-action)}
+.fresh{display:inline-block;width:8px;height:8px;border-radius:50%;background:var(--accent);margin-right:6px;vertical-align:1px}
+.feed{display:flex;flex-direction:column}
+.feed li{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:2px 12px;padding:10px 0;border-bottom:1px solid var(--line);font-size:14px}
+.feed li:last-child{border-bottom:0}
+.feed small{grid-column:1;font-size:12.5px;color:var(--fg-3)}
+.feed time{grid-row:1 / span 2;grid-column:2;align-self:center;font-size:12.5px;color:var(--fg-3);font-variant-numeric:tabular-nums}
+.foot{font-size:12.5px;line-height:1.45;color:var(--fg-3)}
+
+/* подсказка при наведении */
+.tip{position:fixed;z-index:20;pointer-events:none;padding:8px 12px;border-radius:12px;background:var(--toast-bg);color:var(--toast-fg);box-shadow:var(--shadow-float);font-size:13px;line-height:1.35;max-width:240px}
+.tip b{display:block;font-size:15px;font-weight:600}
+.refetch{opacity:.55;transition:opacity .2s}
+@media (max-width:520px){ .hero-num b{font-size:52px} h1{font-size:26px} .hb-row{grid-template-columns:minmax(0,8.5em) minmax(0,1fr) 2.6em} }
+</style>
+<script>
+  try { var t = localStorage.getItem("novice-sheet:theme"); if (t) document.documentElement.setAttribute("data-theme", t); } catch (e) {}
+</script>
+<script src="/config.js"></script>
+</head>
+<body>
+<div class="wrap" id="app"><p class="loading">Открываем статистику…</p></div>
+<div class="tip" id="tip" role="tooltip" hidden></div>
+<script type="module">
+/* ============================================================
+   /dashboard — статистика DnD Kids для владельца сайта.
+   Логин и пароль проверяет функция admin-stats на Supabase (они лежат в её секретах),
+   она же читает базу. Страница хранит только пропуск на 12 часов — в этой вкладке.
+   ============================================================ */
+const cfg = window.APP_CONFIG;
+const URL_FN = `${cfg.supabaseUrl}/functions/v1/admin-stats`;
+const KEY = "dnd-kids:dashboard";
+const app = document.getElementById("app");
+const BRAND = `<a class="brand" href="/"><span class="brand-mark"><svg viewBox="0 0 15 16" aria-hidden="true"><path d="M3.33594 6.72062L0.0375 11.5922C-0.05875 11.7484 0.040625 11.9516 0.222813 11.9716L6.73094 12.6613L3.33594 6.72062ZM0.231562 9.85719L2.58437 6.03375L0.189375 4.59688C0.105937 4.54688 0 4.60687 0 4.70406V9.79187C0 9.91781 0.165312 9.96469 0.231562 9.85719ZM0.570312 13.2375L6.64531 15.9769C6.81094 16.0534 7 15.9322 7 15.75V13.6978L0.639063 13.0009C0.5 12.9853 0.444375 13.1756 0.570312 13.2375ZM3.10844 5.18188L5.60625 0.715C5.74187 0.494375 5.49406 0.238437 5.26937 0.366875L0.556562 3.44844C0.479375 3.49906 0.481875 3.61281 0.560625 3.66031L3.10844 5.18188ZM7.5 5.5H10.9128L7.92594 0.238125C7.82813 0.079375 7.66406 0 7.5 0C7.33594 0 7.17187 0.079375 7.07406 0.238125L4.08719 5.5H7.5ZM14.8106 4.59688L12.4156 6.03406L14.7684 9.8575C14.8344 9.965 15 9.91812 15 9.79187V4.70406C15 4.60687 14.8941 4.54688 14.8106 4.59688ZM11.8916 5.18188L14.4394 3.66C14.5184 3.6125 14.5206 3.49875 14.4434 3.44812L9.73063 0.366875C9.50594 0.238437 9.25813 0.494375 9.39375 0.715L11.8916 5.18188ZM14.3609 13.0009L8 13.6975V15.7497C8 15.9322 8.18906 16.0531 8.35469 15.9766L14.4297 13.2372C14.5556 13.1756 14.5 12.9853 14.3609 13.0009ZM11.6641 6.72062L8.26937 12.6613L14.7775 11.9716C14.9597 11.9512 15.0591 11.7484 14.9628 11.5922L11.6641 6.72062ZM7.5 6.5H4.36156L7.5 11.9922L10.6384 6.5H7.5Z"/></svg></span>DnD Kids <small>статистика</small></a>`;
+const esc = s => String(s ?? "").replace(/[&<>"']/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
+const nf = new Intl.NumberFormat("ru-RU");
+const plural = (n, one, few, many) => { const t = n % 10, h = n % 100; return t === 1 && h !== 11 ? one : t >= 2 && t <= 4 && (h < 12 || h > 14) ? few : many; };
+
+let session = null; try { session = JSON.parse(sessionStorage.getItem(KEY) || "null"); } catch (e) {}
+let S = null, busy = false, err = "", loadedAt = null, timer = null, lastLogin = "";
+
+/* ---------- время ---------- */
+const DAY = 864e5;
+const dayKey = d => { const x = new Date(d); return `${x.getFullYear()}-${String(x.getMonth() + 1).padStart(2, "0")}-${String(x.getDate()).padStart(2, "0")}`; };
+const hm = d => new Date(d).toLocaleTimeString("ru-RU", { hour: "2-digit", minute: "2-digit" });
+function when(d){
+  if (!d) return "—";
+  const t = new Date(d), now = new Date(), diff = now - t;
+  if (diff < 60e3) return "только что";
+  if (diff < 3600e3) return `${Math.floor(diff / 60e3)} мин назад`;
+  if (dayKey(t) === dayKey(now)) return `сегодня ${hm(t)}`;
+  if (dayKey(t) === dayKey(now - DAY)) return `вчера ${hm(t)}`;
+  return t.toLocaleDateString("ru-RU", { day: "numeric", month: "short" }) + ` ${hm(t)}`;
+}
+const dateShort = d => new Date(d).toLocaleDateString("ru-RU", { day: "numeric", month: "short", year: new Date(d).getFullYear() === new Date().getFullYear() ? undefined : "numeric" });
+
+/* ---------- запросы ---------- */
+async function call(body){
+  const r = await fetch(URL_FN, { method: "POST", headers: { "Content-Type": "application/json", apikey: cfg.supabaseKey }, body: JSON.stringify(body) });
+  const data = await r.json().catch(() => ({}));
+  return { status: r.status, data };
+}
+async function login(form){
+  lastLogin = form.login.value.trim();
+  const password = form.password.value;
+  busy = true; err = ""; render();
+  try {
+    const { status, data } = await call({ login: lastLogin, password });
+    if (data.ok){
+      session = { token: data.token, exp: data.exp };
+      try { sessionStorage.setItem(KEY, JSON.stringify(session)); } catch (e) {}
+      S = data.stats; loadedAt = Date.now(); startTimer();
+    } else err = explain(status, data);
+  } catch (e) { console.error(e); err = "Нет связи с сервером. Попробуй ещё раз."; }
+  busy = false; render();
+}
+async function refresh(manual){
+  if (!session || busy) return;
+  busy = true; if (manual) render(); else document.getElementById("dash")?.classList.add("refetch");
+  try {
+    const { status, data } = await call({ token: session.token });
+    if (data.ok){ S = data.stats; loadedAt = Date.now(); err = ""; }
+    else if (status === 401){ busy = false; logout("Пропуск истёк — войди ещё раз."); return; }
+    else err = explain(status, data);
+  } catch (e) { console.error(e); err = "Нет связи с сервером — показываю прошлые цифры."; }
+  busy = false; render();
+}
+function explain(status, data){
+  if (data.error === "wrong") return "Неверный логин или пароль.";
+  if (data.error === "limit") return `Слишком много попыток. Попробуй через ${Math.ceil((data.retryAfter || 900) / 60)} мин.`;
+  if (data.error === "not-configured") return "Вход ещё не настроен: задай секреты ADMIN_LOGIN и ADMIN_PASSWORD в Supabase → Edge Functions → Secrets.";
+  if (data.error === "read") return "Не получилось прочитать базу. Попробуй обновить через минуту.";
+  return `Что-то пошло не так (код ${status}).`;
+}
+function logout(msg){
+  session = null; S = null; err = msg || ""; clearInterval(timer);
+  try { sessionStorage.removeItem(KEY); } catch (e) {}
+  render();
+}
+// Пока вкладка открыта и видна, цифры обновляются сами раз в две минуты
+function startTimer(){ clearInterval(timer); timer = setInterval(() => { if (document.visibilityState === "visible") refresh(false); }, 120e3); }
+document.addEventListener("visibilitychange", () => { if (document.visibilityState === "visible" && S && Date.now() - loadedAt > 120e3) refresh(false); });
+
+/* ---------- подсчёты ---------- */
+const APP = { builder: "Конструктор и шаблоны", "builder-manual": "Конструктор + ручная правка", lss: "Long Story Short", manual: "Вручную" };
+function crunch(S){
+  const now = Date.now();
+  const P = S.people.map((p, i) => ({ ...p, i, heroes: 0, lastHero: null, tables: 0, players: new Set(), seatedOut: 0 }));
+  for (const h of S.heroes){ const p = P[h.owner]; if (!p) continue; p.heroes++; if (!p.lastHero || h.updated > p.lastHero) p.lastHero = h.updated; }
+  for (const t of S.tables){ const p = P[t.owner]; if (p) p.tables++; }
+  for (const s of S.seats){
+    if (s.owner === s.master) continue;
+    if (P[s.master]) P[s.master].players.add(s.owner);
+    if (P[s.owner]) P[s.owner].seatedOut++;
+  }
+  P.forEach(p => {
+    p.last = [p.lastSignIn, p.lastHero].filter(Boolean).sort().pop() || p.created;
+    p.role = p.tables ? "Мастер" : p.seatedOut ? "Игрок" : p.heroes ? "Собирает героев" : "Осматривается";
+  });
+  const within = (d, ms) => d && now - new Date(d) < ms;
+  const count = (list, key) => { const o = new Map(); list.forEach(x => { const k = key(x); if (k != null) o.set(k, (o.get(k) || 0) + 1); }); return [...o].sort((a, b) => b[1] - a[1]); };
+  const days = [];
+  for (let i = 13; i >= 0; i--){ const d = new Date(now - i * DAY); days.push({ key: dayKey(d), d }); }
+  const perDay = list => days.map(x => ({ ...x, v: list.filter(d => dayKey(d) === x.key).length }));
+  return {
+    P, now,
+    accounts: P.length,
+    new24: P.filter(p => within(p.created, DAY)).length,
+    active24: P.filter(p => within(p.last, DAY)).length,
+    active7: P.filter(p => within(p.last, 7 * DAY)).length,
+    withHeroes: P.filter(p => p.heroes).length,
+    masters: P.filter(p => p.tables).length,
+    playersOut: P.filter(p => p.seatedOut).length,
+    heroes: S.heroes.length, heroes24: S.heroes.filter(h => within(h.created, DAY)).length,
+    tables: S.tables.length, seats: S.seats.length,
+    accDays: perDay(S.people.map(p => p.created)),
+    heroDays: perDay(S.heroes.map(h => h.created)),
+    classes: count(S.heroes, h => h.cls),
+    races: count(S.heroes, h => h.race),
+    sources: count(S.heroes, h => APP[h.app] || "Первые версии"),
+    levels: [1, 2, 3, 4].map(l => [`${l} уровень`, S.heroes.filter(h => h.level === l).length]).filter(x => x[1]),
+    subclasses: count(S.heroes.filter(h => h.subclass), h => h.subclass)
+  };
+}
+
+/* ---------- графики ---------- */
+// Столбики по дням: тонкие, скруглённый верх, подписан только самый высокий день, остальное — в подсказке и таблице
+function columns(days, unit, tableHead){
+  const max = Math.max(0, ...days.map(d => d.v));
+  if (!max) return `<p class="empty-chart">За две недели — ни одного.</p>`;
+  const W = 560, H = 170, L = 26, B = 22, T = 16, n = days.length, band = (W - L) / n, bw = Math.min(24, band * 0.62);
+  const top = Math.max(1, max <= 4 ? max : Math.ceil(max / 2) * 2);
+  const y = v => T + (H - T - B) * (1 - v / top);
+  const ticks = [...new Set([0, Math.round(top / 2), top])];
+  const peak = days.reduce((a, b) => (b.v >= a.v ? b : a));
+  const bars = days.map((d, i) => {
+    const x = L + i * band + (band - bw) / 2, y0 = H - B, y1 = y(d.v), h = y0 - y1, r = Math.min(4, h, bw / 2);
+    const tip = `${nf.format(d.v)} ${unit(d.v)}|${d.d.toLocaleDateString("ru-RU", { weekday: "short", day: "numeric", month: "long" })}`;
+    const path = d.v ? `M${x},${y0}V${y1 + r}Q${x},${y1} ${x + r},${y1}H${x + bw - r}Q${x + bw},${y1} ${x + bw},${y1 + r}V${y0}Z` : "";
+    const label = i % 2 === (n - 1) % 2 ? `<text class="tick" x="${x + bw / 2}" y="${H - 6}" text-anchor="middle">${d.d.getDate()}</text>` : "";
+    return `<rect class="hit" x="${L + i * band}" y="${T - 6}" width="${band}" height="${H - B - T + 6}" tabindex="0" data-tip="${esc(tip)}" aria-label="${esc(tip.replace("|", ", "))}"></rect>${path ? `<path class="bar" d="${path}"/>` : `<g></g>`}${d === peak ? `<text class="val" x="${x + bw / 2}" y="${y1 - 5}" text-anchor="middle">${d.v}</text>` : ""}${label}`;
+  }).join("");
+  const grid = ticks.map(t => `<line class="${t ? "gl" : "base"}" x1="${L}" x2="${W}" y1="${y(t)}" y2="${y(t)}"/><text class="tick" x="${L - 6}" y="${y(t) + 4}" text-anchor="end">${t}</text>`).join("");
+  return `<svg viewBox="0 0 ${W} ${H}" role="img" aria-label="${esc(tableHead)} за 14 дней">${grid}${bars}</svg>
+    <details class="tv"><summary>Таблицей</summary><table><thead><tr><th>День</th><th class="n">${esc(tableHead)}</th></tr></thead><tbody>${days.slice().reverse().map(d => `<tr><td>${esc(d.d.toLocaleDateString("ru-RU", { weekday: "short", day: "numeric", month: "long" }))}</td><td class="n">${d.v}</td></tr>`).join("")}</tbody></table></details>`;
+}
+// Горизонтальные полосы: длина от самого частого, число — на конце
+function bars(rows, total, empty = "Пока пусто."){
+  if (!rows.length) return `<p class="empty-chart">${empty}</p>`;
+  const max = Math.max(...rows.map(r => r[1]));
+  return `<div class="hb">${rows.map(([k, v]) => {
+    const pct = total ? Math.round(v / total * 100) : 0;
+    return `<div class="hb-row" tabindex="0" data-tip="${esc(`${nf.format(v)} — ${pct}%|${k}`)}"><span>${esc(k)}</span><span class="hb-track"><i style="--w:${(v / max * 100).toFixed(1)}%"></i></span><b>${nf.format(v)}</b></div>`;
+  }).join("")}</div>`;
+}
+const card = (title, note, body) => `<section class="card chart"><div class="chart-h"><h2>${title}</h2>${note ? `<span class="meta">${note}</span>` : ""}</div>${body}</section>`;
+
+/* ---------- экраны ---------- */
+function viewLogin(){
+  return `<header class="top-row">${BRAND}</header>
+  <form class="card login" id="loginForm" autocomplete="on">
+    <h1>Статистика</h1>
+    <p class="meta">Только для владельца сайта. Логин и пароль заданы в секретах функции на Supabase.</p>
+    ${err ? `<p class="alert" role="alert">${esc(err)}</p>` : ""}
+    <label class="fld"><span>Логин</span><input name="login" autocomplete="username" required autocapitalize="off" spellcheck="false" value="${esc(lastLogin)}"></label>
+    <label class="fld"><span>Пароль</span><input name="password" type="password" autocomplete="current-password" required${lastLogin ? " autofocus" : ""}></label>
+    <button class="btn primary" type="submit"${busy ? " disabled" : ""}>${busy ? "Проверяем…" : "Войти"}</button>
+  </form>`;
+}
+function viewDash(){
+  const X = crunch(S);
+  const tile = (lbl, v, sub) => `<div class="tile card"><span class="lbl">${lbl}</span><b>${nf.format(v)}</b>${sub ? `<small>${sub}</small>` : ""}</div>`;
+  const pct = (a, b) => (b ? Math.round(a / b * 100) : 0);
+  const people = [...X.P].sort((a, b) => String(b.last).localeCompare(String(a.last)));
+  const roleCls = r => (r === "Мастер" ? "m" : r === "Игрок" ? "p" : "");
+  const peopleRows = people.map(p => `<tr>
+      <td><div class="who">${p.avatar ? `<img src="${esc(p.avatar)}" alt="" loading="lazy" referrerpolicy="no-referrer">` : `<span class="ph"></span>`}<div><b>${esc(p.name)}</b><br><span class="role ${roleCls(p.role)}">${p.role}</span></div></div></td>
+      <td>${X.now - new Date(p.last) < 15 * 60e3 ? `<span class="fresh" title="Был на сайте последние 15 минут"></span>` : ""}${esc(when(p.last))}</td>
+      <td>${esc(dateShort(p.created))}</td>
+      <td class="n">${p.heroes || "—"}</td><td class="n">${p.tables || "—"}</td><td class="n">${p.players.size || "—"}</td><td class="n">${p.seatedOut || "—"}</td>
+    </tr>`).join("");
+  const tableRows = [...S.tables].sort((a, b) => String(b.created).localeCompare(String(a.created))).map(t => `<tr>
+      <td><b>${esc(t.name)}</b></td><td>${esc(S.people[t.owner]?.name || "—")}</td>
+      <td class="n">${t.heroes}</td><td class="n">${t.players || "—"}</td><td>${esc(dateShort(t.created))}</td></tr>`).join("");
+  const recent = [...S.heroes].sort((a, b) => String(b.updated).localeCompare(String(a.updated))).slice(0, 10).map(h => {
+    const isNew = Math.abs(new Date(h.updated) - new Date(h.created)) < 5000;
+    return `<li><span><b>${esc(h.name)}</b> · ${esc([h.race, h.cls ? `${h.cls}${h.level ? " " + h.level : ""}` : ""].filter(Boolean).join(", "))}</span>
+      <small>${isNew ? "создан" : "изменён"} · ${esc(S.people[h.owner]?.name || "—")}${h.subclass ? ` · ${esc(h.subclass.toLowerCase())}` : ""}</small><time>${esc(when(h.updated))}</time></li>`;
+  }).join("");
+  const funnel = [["Вошли через Discord", X.accounts], ["Собрали героя", X.withHeroes], ["Создали стол", X.masters], ["Сели за чужой стол", X.playersOut]];
+
+  return `<header class="top-row">${BRAND}
+    <div class="top-btns">
+      <span class="meta">обновлено ${loadedAt ? esc(hm(loadedAt)) : "—"}</span>
+      <button class="btn neutral" data-act="refresh"${busy ? " disabled" : ""} aria-label="Обновить"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M20 11a8 8 0 1 0-2.3 5.7"/><path d="M20 4v7h-7"/></svg>Обновить</button>
+      <button class="btn neutral" data-act="logout">Выйти</button>
+    </div></header>
+  ${err ? `<p class="alert" role="alert">${esc(err)}</p>` : ""}
+  <div id="dash" class="dash" style="display:flex;flex-direction:column;gap:20px">
+  <section class="head">
+    <div class="hero-num"><span class="lbl">Аккаунтов</span><b>${nf.format(X.accounts)}</b>
+      <span class="delta${X.new24 ? "" : " flat"}">${X.new24 ? `+${X.new24} за сутки` : "за сутки новых нет"}</span></div>
+    <p class="meta">Данные из базы на ${esc(new Date(S.at).toLocaleString("ru-RU", { day: "numeric", month: "long", hour: "2-digit", minute: "2-digit" }))}. Обновляются сами раз в две минуты.</p>
+  </section>
+  <div class="tiles">
+    ${tile("Заходили за 7 дней", X.active7, `за сутки — ${X.active24}`)}
+    ${tile("Собрали героя", X.withHeroes, `${pct(X.withHeroes, X.accounts)}% от всех аккаунтов`)}
+    ${tile("Героев", X.heroes, X.heroes24 ? `+${X.heroes24} за сутки` : "за сутки новых нет")}
+    ${tile("Столов", X.tables, `${X.seats} ${plural(X.seats, "место занято", "места занято", "мест занято")}`)}
+    ${tile("Игроков за чужими столами", X.playersOut, "пришли по приглашению")}
+  </div>
+  <div class="grid2">
+    ${card("Новые аккаунты", "по дням, 14 дней", columns(X.accDays, n => plural(n, "аккаунт", "аккаунта", "аккаунтов"), "Аккаунтов"))}
+    ${card("Новые герои", "по дням, 14 дней", columns(X.heroDays, n => plural(n, "герой", "героя", "героев"), "Героев"))}
+  </div>
+  <div class="grid2">
+    ${card("Путь человека", "сколько дошло до каждого шага", bars(funnel, X.accounts))}
+    ${card("Откуда герои", `${X.heroes} ${plural(X.heroes, "герой", "героя", "героев")}`, bars(X.sources, X.heroes, "Героев пока нет."))}
+    ${card("Классы", "", bars(X.classes, X.heroes, "Героев пока нет."))}
+    ${card("Расы", "", bars(X.races, X.heroes, "Героев пока нет."))}
+    ${card("Уровни", "", bars(X.levels, X.heroes, "Героев пока нет."))}
+    ${card("Подклассы", "у героев, чей подкласс уже работает", bars(X.subclasses.slice(0, 12), X.heroes, "Подклассов пока нет."))}
+  </div>
+  <section class="card chart">
+    <div class="chart-h"><h2>Люди</h2><span class="meta">сначала те, кто был недавно</span></div>
+    <div class="tblwrap"><table>
+      <thead><tr><th>Кто</th><th>Последняя активность</th><th>С нами с</th><th class="n">Героев</th><th class="n">Столов</th><th class="n">Игроков у него</th><th class="n">За чужими столами</th></tr></thead>
+      <tbody>${peopleRows || `<tr><td colspan="7" class="meta">Пока никого.</td></tr>`}</tbody></table></div>
+    <p class="meta">Последняя активность — вход на сайт или правка героя, что позже. Почта и токены сюда не попадают.</p>
+  </section>
+  <div class="grid2">
+    <section class="card chart"><div class="chart-h"><h2>Столы</h2><span class="meta">${S.tables.length}</span></div>
+      ${S.tables.length ? `<div class="tblwrap"><table><thead><tr><th>Стол</th><th>Мастер</th><th class="n">Героев</th><th class="n">Игроков</th><th>Создан</th></tr></thead><tbody>${tableRows}</tbody></table></div>` : `<p class="empty-chart">Столов пока нет.</p>`}
+    </section>
+    <section class="card chart"><div class="chart-h"><h2>Последние правки героев</h2></div>
+      ${recent ? `<ul class="feed">${recent}</ul>` : `<p class="empty-chart">Героев пока нет.</p>`}
+    </section>
+  </div>
+  </div>
+  <footer class="foot">Страница не попадает в поиск. Пропуск хранится только в этой вкладке и живёт 12 часов.</footer>`;
+}
+function render(){ app.innerHTML = session && S ? viewDash() : session && !S ? `<header class="top-row">${BRAND}</header><p class="loading">Собираем цифры…</p>` : viewLogin(); }
+
+/* ---------- подсказка при наведении и фокусе: значение крупно, подпись ниже ---------- */
+const tip = document.getElementById("tip");
+function showTip(el, x, y){
+  const [v, l] = (el.dataset.tip || "").split("|");
+  tip.replaceChildren(Object.assign(document.createElement("b"), { textContent: v }), document.createTextNode(l || ""));
+  tip.hidden = false;
+  const r = tip.getBoundingClientRect();
+  tip.style.left = `${Math.max(8, Math.min(innerWidth - r.width - 8, x - r.width / 2))}px`;
+  tip.style.top = `${Math.max(8, y - r.height - 12)}px`;
+}
+document.addEventListener("pointermove", e => { const el = e.target.closest?.("[data-tip]"); if (el) showTip(el, e.clientX, e.clientY); else tip.hidden = true; });
+document.addEventListener("focusin", e => { const el = e.target.closest?.("[data-tip]"); if (el){ const r = el.getBoundingClientRect(); showTip(el, r.left + r.width / 2, r.top); } });
+document.addEventListener("focusout", () => { tip.hidden = true; });
+document.addEventListener("scroll", () => { tip.hidden = true; }, { passive: true });
+
+document.addEventListener("submit", e => { if (e.target.id === "loginForm"){ e.preventDefault(); login(e.target); } });
+document.addEventListener("click", e => {
+  const b = e.target.closest("[data-act]");
+  if (!b) return;
+  if (b.dataset.act === "refresh") refresh(true);
+  if (b.dataset.act === "logout") logout();
+});
+
+if (session && session.exp > Date.now()){ render(); startTimer(); refresh(true); }
+else { session = null; render(); }
+</script>
+</body>
+</html>
