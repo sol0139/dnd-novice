@@ -218,6 +218,41 @@ h2{font-family:var(--f-head);font-weight:500;font-size:20px;line-height:1.15;let
 .sel-info li small{font-size:12px;color:var(--fg-3)}
 @media print{ .top-row,.hero .eyebrow,.pick,.foot{display:none} .tbl-card,.tbl-sum{box-shadow:none;border:1px solid #ccc} }
 
+/* Ручной редактор листа */
+.way.wide{grid-column:1 / -1}
+.ed-h{margin-top:4px}
+.ed{display:flex;flex-direction:column;gap:10px}
+.ed-sec summary{list-style:none;display:grid;grid-template-columns:minmax(0,1fr) auto;align-items:center;gap:2px 12px;padding:16px 20px;cursor:pointer}
+.ed-sec summary::-webkit-details-marker{display:none}
+.ed-t{font-family:var(--f-head);font-weight:500;font-size:18px;letter-spacing:-.3px}
+.ed-p{grid-column:1;font-size:13.5px;color:var(--fg-3);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.ed-sec .chev{grid-column:2;grid-row:1 / span 2;width:9px;height:9px;border-right:2px solid var(--fg-3);border-bottom:2px solid var(--fg-3);transform:rotate(45deg) translateY(-3px);transition:transform .2s}
+.ed-sec[open] .chev{transform:rotate(-135deg) translateY(-1px)}
+.ed-body{display:flex;flex-direction:column;gap:12px;padding:0 16px 18px}
+.ed-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}
+.ed-grid .fld.wide{grid-column:1 / -1}
+.fld select{height:48px;padding:0 12px;border:0;border-radius:14px;background:var(--neutral);color:var(--fg);font:inherit;font-size:16px;width:100%}
+.fld-row input{min-width:0;height:48px;padding:0 14px;border:0;border-radius:14px;background:var(--neutral);color:var(--fg);font:inherit;font-size:16px}
+.ed-inline{display:flex;flex-wrap:wrap;align-items:center;gap:8px 12px}
+.fld-row .pb-in{flex:0 0 76px;text-align:center}
+.fld-row .btn{white-space:normal;text-align:left;line-height:1.25}
+.slot-ed{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:6px}
+.slot-ed input{text-align:center;padding:0 6px}
+.eq-ed{padding:10px;display:flex;flex-direction:column;gap:8px}
+.eq-ed .fld-row input:first-child{flex:1}
+.eq-ed .qty{width:72px;flex:none;text-align:center}
+.eq-ed .note{height:42px;padding:0 14px;border:0;border-radius:12px;background:var(--neutral);color:var(--fg);font:inherit;font-size:14.5px;width:100%}
+.x{flex:none;width:40px;height:40px;border:0;border-radius:50%;background:var(--neutral);color:var(--fg-2);font-size:20px;line-height:1;cursor:pointer}
+.rvf-h .x{margin-left:auto}
+.addcond{align-self:flex-start;min-height:44px;padding:8px 16px;border:1.5px dashed color-mix(in srgb,var(--fg-3) 45%,transparent);border-radius:16px;background:transparent;color:var(--fg);
+  font-family:var(--f-btn);font-weight:600;font-size:14.5px;cursor:pointer}
+.tag{display:inline-flex;align-items:center;gap:4px;padding-right:4px;color:var(--fg)}
+.tag-x{width:28px;height:28px;border:0;border-radius:50%;background:transparent;color:var(--fg-3);font-size:17px;line-height:1;cursor:pointer}
+.pk.sk-ex{background:var(--accent-ink);color:#fff}
+.pk small{font-size:12px}
+@media (max-width:359px){ .ed-grid{grid-template-columns:1fr} }
+@media (max-width:420px){ .slot-ed{grid-template-columns:repeat(3,minmax(0,1fr))} }
+
 /* Шаблоны */
 .tpls{display:flex;flex-direction:column;gap:10px}
 .tpl{padding:18px 20px;display:flex;flex-direction:column;gap:10px}

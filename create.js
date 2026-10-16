@@ -202,6 +202,7 @@ export function viewBuild(ctx){
   <section class="hero">
     <p class="eyebrow"><button type="button" class="linkbtn" data-act="crBack">← Мои персонажи</button></p>
     <h1>${CR.editId ? "Правка героя" : "Новый персонаж"}</h1>
+    ${CR.editId && CR.manual ? `<p class="alert">Этого героя правили вручную. Сохранение из конструктора соберёт лист заново, и ручные правки пропадут. Чтобы их сохранить, вернись и нажми «Вручную».</p>` : ""}
     <p class="lead">Выбирай по порядку сверху вниз. Числа, навыки и заклинания конструктор подставляет сам, поправить можно всё.</p>
     <div class="hero-btns"><button type="button" class="btn neutral sm" data-act="crRandom">Случайный герой</button></div>
   </section>
@@ -307,7 +308,7 @@ export function createHandlers(ctx){
     edit: async b => {
       const choices = await ctx.loadChoices(b.dataset.id);
       if (!choices) return;
-      CR.editId = b.dataset.id;
+      CR.editId = b.dataset.id; CR.manual = !!choices._manual; delete choices._manual;
       open("build", choices);
     }
   };

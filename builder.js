@@ -24,7 +24,7 @@ const SKILL_NAMES = {
   insight: "Проницательность", medicine: "Медицина", perception: "Восприятие", survival: "Выживание",
   deception: "Обман", intimidation: "Запугивание", performance: "Выступление", persuasion: "Убеждение"
 };
-export { SKILL_NAMES, ABBR };
+export { SKILL_NAMES, ABBR, SKILL_AB };
 
 const SLOTS = {
   full: [{ 1: 2 }, { 1: 3 }, { 1: 4, 2: 2 }, { 1: 4, 2: 3 }],
