@@ -255,6 +255,16 @@ h2{font-family:var(--f-head);font-weight:500;font-size:20px;line-height:1.15;let
 @media (max-width:359px){ .ed-grid{grid-template-columns:1fr} }
 @media (max-width:420px){ .slot-ed{grid-template-columns:repeat(3,minmax(0,1fr))} }
 
+/* Обратная связь */
+.fb-dlg{width:min(480px,calc(100% - 32px))}
+.fb-text{width:100%;min-height:120px;padding:12px 14px;border:0;border-radius:16px;background:var(--neutral);color:var(--fg);font:inherit;font-size:16px;line-height:1.45;resize:vertical}
+.fb-shot{display:flex;flex-wrap:wrap;align-items:center;gap:8px 12px}
+.fb-add{position:relative}
+.fb-add input{position:absolute;inset:0;opacity:0;width:100%;cursor:pointer}
+.fb-prev{position:relative;width:100%}
+.fb-prev img{display:block;width:100%;max-height:240px;object-fit:contain;border-radius:14px;background:var(--neutral)}
+.fb-prev .x{position:absolute;top:8px;right:8px;box-shadow:var(--shadow)}
+
 /* Профиль мастера */
 .pf-who{display:flex;align-items:center;gap:14px}
 .pf-who img,.pf-who .ph{flex:none;width:64px;height:64px;border-radius:50%;object-fit:cover;background:var(--neutral)}

@@ -66,7 +66,8 @@ function header(){
     const nick = m.custom_claims?.global_name || m.full_name || m.name || m.user_name || "Мастер";
     me = `<button type="button" class="me" data-act="openProfile" aria-label="Профиль: ${esc(nick)}">${m.avatar_url ? `<img src="${esc(m.avatar_url)}" alt="">` : `<span class="ph"></span>`}<span>${esc(nick)}</span></button>`;
   }
-  return `<header class="top-row">${BRAND}<div class="top-btns">${me}${themeBtn()}</div></header>`;
+  const fb = session ? `<button type="button" class="iconbtn" data-act="openFeedback" aria-label="Написать автору" title="Написать автору"><svg class="i" viewBox="0 0 24 24" aria-hidden="true"><path d="M5 5h14a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2h-7l-4.5 3.5V17H5a2 2 0 0 1-2-2V7a2 2 0 0 1 2-2z"/><path d="M8 10h8M8 13h5"/></svg></button>` : "";
+  return `<header class="top-row">${BRAND}<div class="top-btns">${me}${fb}${themeBtn()}</div></header>`;
 }
 
 function viewGuest(){
@@ -157,6 +158,98 @@ const WAY_ICONS = {
   blank: `<svg class="i" viewBox="0 0 24 24" aria-hidden="true"><rect x="5" y="3" width="14" height="18" rx="3"/><path d="M9 8h6M9 12h6M9 16h3"/></svg>`
 };
 
+/* ---------- обратная связь ---------- */
+// Текст и скриншот уходят в функцию feedback на Supabase, она пересылает их автору в Discord или Telegram.
+// В базе ничего не хранится.
+const FB_URL = `${cfg.supabaseUrl}/functions/v1/feedback`;
+let fbShot = null;   // сжатый скриншот (Blob)
+function whereNow(){
+  if (ED.r) return ED.r.mode === "import" ? "Импорт из LSS" : ED.r.mode === "blank" ? "Пустой лист" : "Ручная правка";
+  if (profileMode) return "Профиль";
+  if (tableMode) return "Шпаргалка стола";
+  if (CR.mode === "templates") return "Шаблоны";
+  if (CR.mode === "build") return CR.editId ? "Конструктор, правка" : "Конструктор";
+  return "Мои персонажи";
+}
+function deviceNow(){
+  const ua = navigator.userAgent;
+  const os = /iPhone|iPad/.test(ua) ? "iOS" : /Android/.test(ua) ? "Android" : /Mac OS/.test(ua) ? "macOS" : /Windows/.test(ua) ? "Windows" : /Linux/.test(ua) ? "Linux" : "";
+  const br = /YaBrowser/.test(ua) ? "Яндекс" : /Edg\//.test(ua) ? "Edge" : /Firefox\//.test(ua) ? "Firefox" : /Chrome\//.test(ua) ? "Chrome" : /Safari\//.test(ua) ? "Safari" : "";
+  return [os, br, `${window.innerWidth}×${window.innerHeight}`].filter(Boolean).join(", ");
+}
+// Скриншот ужимаем в браузере: до 1600 точек по длинной стороне, JPEG — обычно 150–400 КБ
+async function shrink(file){
+  const bmp = await createImageBitmap(file);
+  const k = Math.min(1, 1600 / Math.max(bmp.width, bmp.height));
+  const c = document.createElement("canvas");
+  c.width = Math.round(bmp.width * k); c.height = Math.round(bmp.height * k);
+  const g = c.getContext("2d"); g.fillStyle = "#fff"; g.fillRect(0, 0, c.width, c.height); g.drawImage(bmp, 0, 0, c.width, c.height);
+  return await new Promise(ok => c.toBlob(ok, "image/jpeg", 0.85));
+}
+function fbShotView(){
+  const box = document.getElementById("fbShotBox");
+  if (!box) return;
+  if (fbShot){
+    const url = URL.createObjectURL(fbShot);
+    box.innerHTML = `<div class="fb-prev"><img src="${url}" alt="Скриншот"><button type="button" class="x" data-act="fbShotDel" aria-label="Убрать скриншот">×</button></div>`;
+  } else {
+    box.innerHTML = `<label class="addcond fb-add">Прикрепить скриншот<input type="file" id="fbFile" accept="image/*" hidden></label>
+      <span class="meta">или вставь из буфера: Ctrl+V</span>`;
+  }
+}
+async function takeShot(file){
+  if (!file || !/^image\//.test(file.type)){ toast("Нужна картинка: PNG или JPG."); return; }
+  try { fbShot = await shrink(file); } catch (e) { console.error(e); fbShot = file.size < 4e6 ? file : null; if (!fbShot) toast("Не получилось прочитать картинку."); }
+  fbShotView();
+}
+function openFeedback(){
+  let dlg = document.getElementById("fbDlg");
+  if (!dlg){
+    dlg = document.createElement("dialog"); dlg.id = "fbDlg"; dlg.className = "qr-dlg fb-dlg"; document.body.appendChild(dlg);
+    dlg.addEventListener("click", e => { if (e.target === dlg) dlg.close(); });
+    // вставка скриншота из буфера обмена
+    dlg.addEventListener("paste", e => {
+      const item = [...(e.clipboardData?.items || [])].find(i => i.type.startsWith("image/"));
+      if (item){ e.preventDefault(); takeShot(item.getAsFile()); }
+    });
+    dlg.addEventListener("change", e => { if (e.target.id === "fbFile" && e.target.files[0]) takeShot(e.target.files[0]); });
+  }
+  fbShot = null;
+  dlg.innerHTML = `<div class="qr-in">
+    <h3>Написать автору</h3>
+    <p class="meta">Что сломалось, что непонятно, чего не хватает — сообщение сразу придёт автору. К нему добавится, где ты сейчас: «${esc(whereNow())}».</p>
+    <textarea class="fb-text" id="fbText" rows="5" maxlength="3000" placeholder="Например: в конструкторе не нажимается «Сохранить», когда выбран бард"></textarea>
+    <div class="fb-shot" id="fbShotBox"></div>
+    <div class="char-acts"><button type="button" class="btn neutral sm" data-act="fbClose">Отмена</button><button type="button" class="btn primary sm" id="fbSend" data-act="fbSend">Отправить</button></div>
+  </div>`;
+  fbShotView();
+  try { dlg.showModal(); } catch (e) { dlg.setAttribute("open", ""); }
+  setTimeout(() => document.getElementById("fbText")?.focus(), 50);
+}
+async function sendFeedback(){
+  const text = (document.getElementById("fbText")?.value || "").trim();
+  if (!text && !fbShot){ toast("Напиши пару слов или приложи скриншот."); return; }
+  const btn = document.getElementById("fbSend");
+  btn.disabled = true; btn.textContent = "Отправляем…";
+  try {
+    const { data } = await sb.auth.getSession();
+    const token = data?.session?.access_token;
+    if (!token){ toast("Войди заново, чтобы отправить отзыв."); return; }
+    const fd = new FormData();
+    fd.append("text", text); fd.append("page", whereNow()); fd.append("device", deviceNow());
+    if (fbShot) fd.append("screenshot", fbShot, "screenshot.jpg");
+    const r = await fetch(FB_URL, { method: "POST", headers: { Authorization: `Bearer ${token}`, apikey: cfg.supabaseKey }, body: fd });
+    if (r.ok){ document.getElementById("fbDlg").close(); fbShot = null; toast("Спасибо! Сообщение улетело автору."); return; }
+    const err = (await r.json().catch(() => ({}))).error;
+    toast({ limit: "Слишком часто: подожди несколько минут и попробуй снова.", "not-configured": "Отправка ещё не настроена. Автор скоро её подключит.",
+      big: "Скриншот слишком большой.", auth: "Войди заново, чтобы отправить отзыв.", empty: "Напиши пару слов или приложи скриншот." }[err] || "Не получилось отправить. Попробуй ещё раз.");
+  } catch (e){
+    console.error(e); toast("Нет связи. Попробуй ещё раз чуть позже.");
+  } finally {
+    if (btn.isConnected){ btn.disabled = false; btn.textContent = "Отправить"; }
+  }
+}
+
 /* ---------- профиль мастера ---------- */
 const nickOf = () => { const m = session?.user?.user_metadata || {}; return m.custom_claims?.global_name || m.full_name || m.name || m.user_name || "Мастер"; };
 const plural = (n, one, few, many) => { const t = n % 10, h = n % 100; return t === 1 && h !== 11 ? one : t >= 2 && t <= 4 && (h < 12 || h > 14) ? few : many; };
@@ -197,6 +290,11 @@ function viewProfile(){
   <section class="card pf-sec"><h2>Классы</h2>${bars(byClass, n || 1)}</section>
   <section class="card pf-sec"><h2>Расы</h2>${bars(byRace, n || 1)}</section>
   <section class="card pf-sec"><h2>Откуда герои</h2>${bars(bySource, n || 1)}</section>
+  <section class="card pf-sec">
+    <h2>Написать автору</h2>
+    <p class="meta">Нашёл ошибку, что-то непонятно или чего-то не хватает — напиши и приложи скриншот. Сообщение сразу придёт автору.</p>
+    <button type="button" class="btn neutral" data-act="openFeedback">Написать</button>
+  </section>
   <section class="pf-out">
     <button type="button" class="btn surface" data-act="logout">Выйти из аккаунта</button>
     <p class="meta">Персонажи останутся в базе, ссылки у игроков продолжат работать.</p>
@@ -397,6 +495,10 @@ const H = {
     render();
   },
   openTable: () => openTable(),
+  openFeedback: () => openFeedback(),
+  fbClose: () => document.getElementById("fbDlg")?.close(),
+  fbShotDel: () => { fbShot = null; fbShotView(); },
+  fbSend: () => sendFeedback(),
   openProfile: () => { leaveSubviews(); profileMode = true; render(); window.scrollTo({ top: 0 }); },
   closeProfile: () => { profileMode = false; render(); window.scrollTo({ top: 0 }); },
   closeTable: () => { tableMode = false; tableRows = null; render(); window.scrollTo({ top: 0 }); },
