@@ -14,13 +14,15 @@ const json = (body, status = 200) => new Response(JSON.stringify(body), { status
 
 // Не чаще 5 отзывов за 10 минут от одного человека. Счётчик живёт в памяти функции,
 // база не трогается; после перезапуска функции он обнуляется — для защиты от случайного спама хватает.
+// waitFor возвращает 0, если можно отправлять, иначе — сколько миллисекунд ждать до освобождения места.
+const WINDOW = 10 * 60 * 1000, MAX = 5;
 const recent = new Map();
-function allowed(uid, now = Date.now()){
-  const list = (recent.get(uid) || []).filter(t => now - t < 10 * 60 * 1000);
-  if (list.length >= 5){ recent.set(uid, list); return false; }
+function waitFor(uid, now = Date.now()){
+  const list = (recent.get(uid) || []).filter(t => now - t < WINDOW);
+  if (list.length >= MAX){ recent.set(uid, list); return list[0] + WINDOW - now; }
   list.push(now); recent.set(uid, list);
-  if (recent.size > 500) for (const [k, v] of recent) if (!v.some(t => now - t < 10 * 60 * 1000)) recent.delete(k);
-  return true;
+  if (recent.size > 500) for (const [k, v] of recent) if (!v.some(t => now - t < WINDOW)) recent.delete(k);
+  return 0;
 }
 
 const cut = (s, n) => (s.length > n ? s.slice(0, n - 1) + "…" : s);
@@ -55,7 +57,8 @@ export async function handle(req, env, fetchImpl = fetch){
   const who = m.custom_claims?.global_name || m.full_name || m.name || m.user_name || user.email || user.id;
 
   // 3. не чаще пяти раз за десять минут
-  if (!allowed(user.id)) return json({ error: "limit" }, 429);
+  const wait = waitFor(user.id);
+  if (wait) return json({ error: "limit", retryAfter: Math.ceil(wait / 1000) }, 429);
 
   // 4. отправка в канал Discord
   const fd = new FormData();

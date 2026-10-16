@@ -264,6 +264,16 @@ h2{font-family:var(--f-head);font-weight:500;font-size:20px;line-height:1.15;let
 .fb-prev{position:relative;width:100%}
 .fb-prev img{display:block;width:100%;max-height:240px;object-fit:contain;border-radius:14px;background:var(--neutral)}
 .fb-prev .x{position:absolute;top:8px;right:8px;box-shadow:var(--shadow)}
+.fb-wait{display:flex;flex-direction:column;gap:10px;padding:12px 14px;border-radius:16px;background:var(--neutral)}
+.fb-wait[hidden]{display:none}
+.fb-wait p{display:flex;gap:10px;align-items:flex-start;font-size:14px;line-height:1.45;color:var(--fg-2)}
+.fb-wait svg{flex:none;width:20px;height:20px;margin-top:1px;fill:none;stroke:var(--accent-ink);stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round;transition:transform .6s ease}
+.fb-wait.ready svg{transform:rotate(180deg)}
+.fb-clock{font-variant-numeric:tabular-nums;font-weight:600;color:var(--fg)}
+.btn[data-waiting]{background:var(--neutral);color:var(--fg-3);box-shadow:none;opacity:1;cursor:not-allowed;font-variant-numeric:tabular-nums}
+.fb-bar{height:4px;border-radius:2px;background:var(--line);overflow:hidden}
+.fb-bar i{display:block;height:100%;width:100%;border-radius:2px;background:var(--accent);transition:width 1s linear}
+@media (prefers-reduced-motion:reduce){.fb-bar i,.fb-wait svg{transition:none}}
 
 /* Профиль мастера */
 .pf-who{display:flex;align-items:center;gap:14px}

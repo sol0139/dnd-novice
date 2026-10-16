@@ -163,6 +163,46 @@ const WAY_ICONS = {
 // В базе ничего не хранится.
 const FB_URL = `${cfg.supabaseUrl}/functions/v1/feedback`;
 let fbShot = null;   // сжатый скриншот (Blob)
+let fbDraft = "";    // недописанный текст живёт, пока окно закрыто, — пропадает только после отправки или «Отмены»
+
+// Песочные часы для лимита «пять отзывов за десять минут». Сервер говорит, сколько ждать,
+// браузер помнит момент, когда снова можно (переживает перезагрузку), и сам оживляет кнопку.
+const FB_WAIT_KEY = "novice-sheet:fb-wait";
+let fbWait = { until: 0, total: 0 }, fbTick = null, fbWasWaiting = false;
+try { fbWait = { until: 0, total: 0, ...JSON.parse(localStorage.getItem(FB_WAIT_KEY) || "{}") }; } catch (e) {}
+const fbLeft = () => Math.max(0, Math.ceil((fbWait.until - Date.now()) / 1000));
+const mmss = sec => `${Math.floor(sec / 60)}:${String(sec % 60).padStart(2, "0")}`;
+function setFbWait(sec){
+  fbWait = { until: Date.now() + sec * 1000, total: sec };
+  try { localStorage.setItem(FB_WAIT_KEY, JSON.stringify(fbWait)); } catch (e) {}
+  fbWaitView();
+}
+function stopFbTick(){ clearInterval(fbTick); fbTick = null; }
+function fbWaitView(){
+  const box = document.getElementById("fbWait"), btn = document.getElementById("fbSend");
+  if (!box || !btn || !document.getElementById("fbDlg")?.open){ stopFbTick(); return; }
+  const left = fbLeft();
+  if (!left){
+    stopFbTick();
+    if (fbWait.until){ fbWait = { until: 0, total: 0 }; try { localStorage.removeItem(FB_WAIT_KEY); } catch (e) {} }
+    if (btn.dataset.waiting){ delete btn.dataset.waiting; btn.disabled = false; btn.textContent = "Отправить"; }
+    if (fbWasWaiting){
+      // песок кончился прямо на глазах — пару секунд показываем, что всё, можно
+      fbWasWaiting = false;
+      box.classList.add("ready");
+      box.querySelector(".fb-wait-txt").textContent = "Песок кончился — можно отправлять.";
+      box.querySelector(".fb-bar i").style.width = "0%";
+      setTimeout(() => { if (box.isConnected && !fbLeft()){ box.hidden = true; box.classList.remove("ready"); } }, 2600);
+    } else box.hidden = true;
+    return;
+  }
+  fbWasWaiting = true;
+  box.hidden = false; box.classList.remove("ready");
+  box.querySelector(".fb-wait-txt").innerHTML = `Пять отзывов за десять минут — это предел. Следующий улетит через <b class="fb-clock">${mmss(left)}</b>, а писать можно уже сейчас.`;
+  box.querySelector(".fb-bar i").style.width = `${Math.min(100, (left / Math.max(1, fbWait.total)) * 100)}%`;
+  btn.disabled = true; btn.dataset.waiting = "1"; btn.textContent = `Через ${mmss(left)}`;
+  if (!fbTick) fbTick = setInterval(fbWaitView, 1000);
+}
 function whereNow(){
   if (ED.r) return ED.r.mode === "import" ? "Импорт из LSS" : ED.r.mode === "blank" ? "Пустой лист" : "Ручная правка";
   if (profileMode) return "Профиль";
@@ -213,21 +253,29 @@ function openFeedback(){
       if (item){ e.preventDefault(); takeShot(item.getAsFile()); }
     });
     dlg.addEventListener("change", e => { if (e.target.id === "fbFile" && e.target.files[0]) takeShot(e.target.files[0]); });
+    // закрыли окно — текст не выбрасываем, часы останавливаем
+    dlg.addEventListener("close", () => { fbDraft = document.getElementById("fbText")?.value || ""; stopFbTick(); });
   }
-  fbShot = null;
   dlg.innerHTML = `<div class="qr-in">
     <h3>Написать автору</h3>
     <p class="meta">Что сломалось, что непонятно, чего не хватает — сообщение сразу придёт автору. К нему добавится, где ты сейчас: «${esc(whereNow())}».</p>
-    <textarea class="fb-text" id="fbText" rows="5" maxlength="3000" placeholder="Например: в конструкторе не нажимается «Сохранить», когда выбран бард"></textarea>
+    <textarea class="fb-text" id="fbText" rows="5" maxlength="3000" placeholder="Например: в конструкторе не нажимается «Сохранить», когда выбран бард">${esc(fbDraft)}</textarea>
     <div class="fb-shot" id="fbShotBox"></div>
+    <div class="fb-wait" id="fbWait" role="status" hidden>
+      <p><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 3h12M6 21h12M8 3v2.5a4 4 0 0 0 1.6 3.2L12 12l2.4-3.3A4 4 0 0 0 16 5.5V3M8 21v-2.5a4 4 0 0 1 1.6-3.2L12 12l2.4 3.3a4 4 0 0 1 1.6 3.2V21"/></svg><span class="fb-wait-txt"></span></p>
+      <div class="fb-bar"><i></i></div>
+    </div>
     <div class="char-acts"><button type="button" class="btn neutral sm" data-act="fbClose">Отмена</button><button type="button" class="btn primary sm" id="fbSend" data-act="fbSend">Отправить</button></div>
   </div>`;
   fbShotView();
+  fbWasWaiting = false;
   try { dlg.showModal(); } catch (e) { dlg.setAttribute("open", ""); }
+  fbWaitView();
   setTimeout(() => document.getElementById("fbText")?.focus(), 50);
 }
 async function sendFeedback(){
   const text = (document.getElementById("fbText")?.value || "").trim();
+  if (fbLeft()) return;
   if (!text && !fbShot){ toast("Напиши пару слов или приложи скриншот."); return; }
   const btn = document.getElementById("fbSend");
   btn.disabled = true; btn.textContent = "Отправляем…";
@@ -239,14 +287,16 @@ async function sendFeedback(){
     fd.append("text", text); fd.append("page", whereNow()); fd.append("device", deviceNow());
     if (fbShot) fd.append("screenshot", fbShot, "screenshot.jpg");
     const r = await fetch(FB_URL, { method: "POST", headers: { Authorization: `Bearer ${token}`, apikey: cfg.supabaseKey }, body: fd });
-    if (r.ok){ document.getElementById("fbDlg").close(); fbShot = null; toast("Спасибо! Сообщение улетело автору."); return; }
-    const err = (await r.json().catch(() => ({}))).error;
-    toast({ limit: "Слишком часто: подожди несколько минут и попробуй снова.", "not-configured": "Отправка ещё не настроена. Автор скоро её подключит.",
+    if (r.ok){ document.getElementById("fbText").value = ""; fbShot = null; document.getElementById("fbDlg").close(); toast("Спасибо! Сообщение улетело автору."); return; }
+    const body = await r.json().catch(() => ({}));
+    const err = body.error;
+    if (err === "limit"){ setFbWait(Math.max(1, Math.min(600, Math.round(+body.retryAfter) || 600))); return; }
+    toast({ "not-configured": "Отправка ещё не настроена. Автор скоро её подключит.",
       big: "Скриншот слишком большой.", auth: "Войди заново, чтобы отправить отзыв.", empty: "Напиши пару слов или приложи скриншот." }[err] || "Не получилось отправить. Попробуй ещё раз.");
   } catch (e){
     console.error(e); toast("Нет связи. Попробуй ещё раз чуть позже.");
   } finally {
-    if (btn.isConnected){ btn.disabled = false; btn.textContent = "Отправить"; }
+    if (btn.isConnected && !btn.dataset.waiting){ btn.disabled = false; btn.textContent = "Отправить"; }
   }
 }
 
@@ -496,7 +546,7 @@ const H = {
   },
   openTable: () => openTable(),
   openFeedback: () => openFeedback(),
-  fbClose: () => document.getElementById("fbDlg")?.close(),
+  fbClose: () => { const t = document.getElementById("fbText"); if (t) t.value = ""; fbShot = null; document.getElementById("fbDlg")?.close(); },
   fbShotDel: () => { fbShot = null; fbShotView(); },
   fbSend: () => sendFeedback(),
   openProfile: () => { leaveSubviews(); profileMode = true; render(); window.scrollTo({ top: 0 }); },
