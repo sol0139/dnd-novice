@@ -1,11 +1,9 @@
 // Пересыльщик отзывов DnD Kids.
-// Проверяет, что пишет вошедший мастер, и отправляет текст и скриншот
-// в Discord (вебхук канала) и/или в Telegram (бот). В базе ничего не хранится.
+// Проверяет, что пишет вошедший мастер, и сразу отправляет текст и скриншот
+// в канал Discord через вебхук. Нигде не хранит: ни в базе, ни в файлах.
 //
-// Настройки (Supabase → Edge Functions → Secrets), достаточно одного канала:
+// Настройка (Supabase → Edge Functions → Secrets):
 //   DISCORD_WEBHOOK_URL   ссылка вебхука канала Discord
-//   TELEGRAM_BOT_TOKEN    токен бота от @BotFather
-//   TELEGRAM_CHAT_ID      номер чата, куда бот пишет (твой личный чат с ботом)
 
 const CORS = {
   "Access-Control-Allow-Origin": "*",
@@ -38,8 +36,8 @@ export async function handle(req, env, fetchImpl = fetch){
   const ures = await fetchImpl(`${env.SUPABASE_URL}/auth/v1/user`, { headers: { Authorization: auth, apikey } });
   if (!ures.ok) return json({ error: "auth" }, 401);
   const user = await ures.json();
-  const hook = env.DISCORD_WEBHOOK_URL, tg = env.TELEGRAM_BOT_TOKEN, chat = env.TELEGRAM_CHAT_ID;
-  if (!hook && !(tg && chat)) return json({ error: "not-configured" }, 503);
+  const hook = env.DISCORD_WEBHOOK_URL;
+  if (!hook) return json({ error: "not-configured" }, 503);
 
   // 2. что пишет
   let form;
@@ -55,41 +53,18 @@ export async function handle(req, env, fetchImpl = fetch){
 
   const m = user.user_metadata || {};
   const who = m.custom_claims?.global_name || m.full_name || m.name || m.user_name || user.email || user.id;
-  const head = `Отзыв из DnD Kids\nОт: ${who}${page ? `\nГде: ${page}` : ""}${device ? `\nУстройство: ${device}` : ""}`;
 
   // 3. не чаще пяти раз за десять минут
   if (!allowed(user.id)) return json({ error: "limit" }, 429);
 
-  // 4. отправка
-  let sent = 0; const fails = [];
-
-  if (hook){
-    const fd = new FormData();
-    const content = cut(`**Отзыв из DnD Kids** от **${who}**${page ? `\nГде: ${page}` : ""}${device ? `\nУстройство: ${device}` : ""}\n\n${text || "(без текста, только скриншот)"}`, 2000);
-    fd.append("payload_json", JSON.stringify({ username: "DnD Kids", content, allowed_mentions: { parse: [] } }));
-    if (file) fd.append("files[0]", file, file.name || "screenshot.jpg");
-    try { const r = await fetchImpl(hook, { method: "POST", body: fd }); if (r.ok) sent++; else fails.push(`discord ${r.status}`); }
-    catch (e) { fails.push("discord network"); }
-  }
-  if (tg && chat){
-    const api = `https://api.telegram.org/bot${tg}`;
-    const body = `${head}\n\n${text || "(без текста, только скриншот)"}`;
-    try {
-      let ok = true;
-      if (file){
-        const fd = new FormData();
-        fd.append("chat_id", chat);
-        fd.append("caption", cut(body, 1024));
-        fd.append("photo", file, file.name || "screenshot.jpg");
-        ok = (await fetchImpl(`${api}/sendPhoto`, { method: "POST", body: fd })).ok;
-        // подпись к фото короткая — длинный текст отдельным сообщением
-        if (ok && body.length > 1024) ok = (await fetchImpl(`${api}/sendMessage`, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ chat_id: chat, text: cut(body, 4096) }) })).ok;
-      } else {
-        ok = (await fetchImpl(`${api}/sendMessage`, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ chat_id: chat, text: cut(body, 4096) }) })).ok;
-      }
-      if (ok) sent++; else fails.push("telegram");
-    } catch (e) { fails.push("telegram network"); }
-  }
-  if (!sent) return json({ error: "send", fails }, 502);
-  return json({ ok: true, sent });
+  // 4. отправка в канал Discord
+  const fd = new FormData();
+  const content = cut(`**Отзыв из DnD Kids** от **${who}**${page ? `\nГде: ${page}` : ""}${device ? `\nУстройство: ${device}` : ""}\n\n${text || "(без текста, только скриншот)"}`, 2000);
+  fd.append("payload_json", JSON.stringify({ username: "DnD Kids", content, allowed_mentions: { parse: [] } }));
+  if (file) fd.append("files[0]", file, file.name || "screenshot.jpg");
+  try {
+    const r = await fetchImpl(hook, { method: "POST", body: fd });
+    if (!r.ok) return json({ error: "send", status: r.status }, 502);
+  } catch (e) { return json({ error: "send" }, 502); }
+  return json({ ok: true });
 }

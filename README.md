@@ -25,7 +25,7 @@ data/templates.json   12 готовых героев
 data/knowledge.json   словарик, навыки, подсказки «как играть»
 data/dictionary.json  словарь для разбора LSS: оружие, доспехи, расы, классы
 supabase/migrations/  таблица, правила доступа и лимиты бесплатной базы
-supabase/functions/feedback/  пересыльщик отзывов в Discord или Telegram
+supabase/functions/feedback/  пересыльщик отзывов в канал Discord
 ```
 
 ## Где что живёт
@@ -38,7 +38,7 @@ supabase/functions/feedback/  пересыльщик отзывов в Discord �
 
 ## Обратная связь
 
-Кнопка с облачком в шапке мастерской отправляет текст и скриншот в функцию `feedback` на Supabase, а та пересылает их автору. В базе ничего не хранится. Куда пересылать, задаётся секретами функции (Supabase → Edge Functions → Secrets): `DISCORD_WEBHOOK_URL` для канала Discord и/или `TELEGRAM_BOT_TOKEN` + `TELEGRAM_CHAT_ID` для Telegram-бота.
+Кнопка с облачком в шапке мастерской отправляет текст и скриншот в функцию `feedback` на Supabase, а та сразу пересылает их в канал Discord. Нигде ничего не хранится: ни в базе, ни в файлах. Канал задаётся одним секретом функции (Supabase → Edge Functions → Secrets): `DISCORD_WEBHOOK_URL` — ссылка вебхука канала. Пока секрета нет, сайт честно говорит, что отзывы ещё не настроены.
 
 ## Правила и лицензии
 

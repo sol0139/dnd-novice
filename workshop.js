@@ -159,7 +159,7 @@ const WAY_ICONS = {
 };
 
 /* ---------- обратная связь ---------- */
-// Текст и скриншот уходят в функцию feedback на Supabase, она пересылает их автору в Discord или Telegram.
+// Текст и скриншот уходят в функцию feedback на Supabase, она сразу пересылает их автору в канал Discord.
 // В базе ничего не хранится.
 const FB_URL = `${cfg.supabaseUrl}/functions/v1/feedback`;
 let fbShot = null;   // сжатый скриншот (Blob)
