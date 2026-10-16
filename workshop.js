@@ -6,6 +6,7 @@
 import { createClient } from "https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.117.2/+esm";
 import { CR, viewTemplates, viewBuild, createHandlers, createInput, createChange } from "/create.js";
 import { ED, startImport, openBlank, openEdit, viewEditor, editorHandlers, editorInput, editorChange, editorToggle, editorKey } from "/editor.js";
+import { TB, initTables, loadTables, loadInvite, tablesOf, closeRoom, viewTablesTab, viewInvite, viewRoom, tablesHandlers, tablesInput, tablesKey, tablesBlur } from "/tables.js";
 
 const cfg = window.APP_CONFIG;
 const sb = createClient(cfg.supabaseUrl, cfg.supabaseKey);
@@ -17,11 +18,13 @@ let chars = [];         // персонажи мастера
 let loaded = false;     // список уже пришёл из базы
 let confirmDel = null;  // id персонажа, которого спрашиваем «удалить?»
 let busy = false;       // идёт запрос — кнопки на это время гаснут
+let authKnown = false;  // Supabase уже сказал, вошёл ли мастер: до этого держим «Открываем мастерскую…», чтобы не мигал экран гостя
 // Для списка не тянем лист целиком: только имя расы и класс. Бесплатный трафик Supabase — 5 ГБ в месяц.
 const LIST_COLS = "id,name,share_slug,created_at,updated_at,race:data->race->>name,cls:data->class,app:data->source->>app";
 let profileMode = false; // профиль мастера: статистика и выход
-let tableMode = false;  // шпаргалка стола: ключевые числа всех героев на одном экране
-let tableRows = null;
+const TAB_KEY = "novice-sheet:tab";
+let tab = (() => { try { return localStorage.getItem(TAB_KEY) === "tables" ? "tables" : "chars"; } catch (e) { return "chars"; } })();
+function setTab(t){ tab = t; try { localStorage.setItem(TAB_KEY, t); } catch (e) {} }
 let error = readAuthError();
 
 /* ---------- помощники ---------- */
@@ -72,6 +75,7 @@ function header(){
 
 function viewGuest(){
   return `
+  ${viewInvite(true)}
   <section class="hero">
     <h1>Лист героя для тех, кто играет впервые</h1>
     <p class="lead">Мастер собирает персонажа, игрок открывает его по ссылке. Способности разложены по ходу, каждое слово объяснено.</p>
@@ -80,12 +84,13 @@ function viewGuest(){
       <a class="btn surface" href="/demo">Пример: воин</a>
       <a class="btn surface" href="/demo/nissa">Пример: волшебница</a>
     </div>
-    <p class="meta">Входят только мастера. Игрокам аккаунт не нужен.</p>
+    <p class="meta">Игроку аккаунт не нужен: лист открывается по ссылке. А если хочешь собрать героя сам и сесть за стол мастера — тоже входи.</p>
   </section>
   <section class="steps">
     <div class="step card"><b>Войди через Discord</b><p>Это твоя мастерская: здесь живут все твои персонажи.</p></div>
     <div class="step card"><b>Создай персонажа</b><p>Из шаблона в один клик, в конструкторе, случайно, из файла Long Story Short или вручную на пустом листе.</p></div>
     <div class="step card"><b>Отправь ссылку игроку</b><p>Он откроет лист с телефона, без регистрации.</p></div>
+    <div class="step card"><b>Собери стол</b><p>Твои герои и герои игроков в одной компании: КД, хиты и пассивные проверки всех на одном экране.</p></div>
   </section>`;
 }
 
@@ -115,28 +120,48 @@ function charCard(c){
   return `<article class="char card" data-name="${esc(String(c.name).toLowerCase())}">
     <div class="char-h"><h3>${esc(c.name)}</h3><time datetime="${esc(c.updated_at)}">${when(c.updated_at)}</time></div>
     ${sub ? `<p class="char-sub">${esc(sub)}</p>` : ""}
+    ${seatLine(c)}
     <div class="char-link">${esc(shareLink(c))}</div>
     ${acts}
   </article>`;
 }
 
+function seatLine(c){
+  const ts = tablesOf(c.id);
+  if (!ts.length) return "";
+  return `<p class="char-seat"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="5"/><circle cx="12" cy="3.5" r="1.6"/><circle cx="19.4" cy="16.3" r="1.6"/><circle cx="4.6" cy="16.3" r="1.6"/></svg>За ${ts.length > 1 ? "столами" : "столом"} ${ts.map(t => `<button type="button" class="linkbtn" data-act="tbOpen" data-id="${t.id}">${esc(t.name)}</button>`).join(", ")}</p>`;
+}
+
+function tabs(){
+  const n = TB.list ? TB.list.length : null;
+  const b = (id, label, cnt) => `<button type="button" role="tab" data-act="tab" data-v="${id}" aria-selected="${tab === id}">${label}${cnt != null ? ` <span class="cnt">${cnt}</span>` : ""}</button>`;
+  return `<div class="tabs" role="tablist" aria-label="Мастерская">${b("chars", "Персонажи", loaded ? chars.length : null)}${b("tables", "Столы", n)}</div>`;
+}
+
 function viewMaster(){
+  const head = `
+  ${viewInvite(false)}
+  <section class="hero">
+    <p class="eyebrow">Мастерская</p>
+    <h1>${tab === "tables" ? "Мои столы" : "Мои персонажи"}</h1>
+  </section>
+  ${tabs()}`;
+  if (tab === "tables") return head + viewTablesTab();
+  return head + viewChars();
+}
+
+function viewChars(){
   const list = !loaded
     ? `<p class="meta">Загружаем персонажей…</p>`
     : chars.length
       ? `<div class="list-h"><h2>Персонажи <span class="cnt">${chars.length}</span></h2>
            <div class="list-acts">
              <button type="button" class="btn surface sm" data-act="copyAll">Все ссылки</button>
-             <button type="button" class="btn surface sm" data-act="openTable">Шпаргалка стола</button>
            </div></div>
          ${chars.length > 5 ? `<input class="search" id="charSearch" type="search" placeholder="Найти по имени" autocomplete="off">` : ""}
          <div class="chars">${chars.map(charCard).join("")}</div>`
       : `<div class="empty card">Здесь пока пусто. Создай первого персонажа, и игрок получит его по ссылке.</div>`;
   return `
-  <section class="hero">
-    <p class="eyebrow">Мастерская</p>
-    <h1>Мои персонажи</h1>
-  </section>
   <section class="new card">
     <h2>Новый персонаж</h2>
     <div class="ways">
@@ -206,7 +231,8 @@ function fbWaitView(){
 function whereNow(){
   if (ED.r) return ED.r.mode === "import" ? "Импорт из LSS" : ED.r.mode === "blank" ? "Пустой лист" : "Ручная правка";
   if (profileMode) return "Профиль";
-  if (tableMode) return "Шпаргалка стола";
+  if (TB.roomId) return `Стол «${TB.room?.name || "…"}»`;
+  if (tab === "tables") return "Мои столы";
   if (CR.mode === "templates") return "Шаблоны";
   if (CR.mode === "build") return CR.editId ? "Конструктор, правка" : "Конструктор";
   return "Мои персонажи";
@@ -351,75 +377,23 @@ function viewProfile(){
   </section>`;
 }
 
-/* ---------- шпаргалка стола ---------- */
-// Только нужные поля, без описаний способностей
-const TABLE_COLS = "id,name,share_slug,cls:data->class,race:data->race->>name,ac:data->ac->>value,hp:data->hp->>max,speed:data->>speed,ab:data->abilities,skills:data->skills,ex:data->expertise,pb:data->>proficiencyBonus,pp:data->>passivePerception,half:data->>halfProf,sc:data->spellcasting,langs:data->languages,saves:data->saves";
-const TABLE_KEY = "novice-sheet:table";
-const ABBR = { str: "СИЛ", dex: "ЛОВ", con: "ТЕЛ", int: "ИНТ", wis: "МДР", cha: "ХАР" };
-const md = s => Math.floor(((+s || 10) - 10) / 2);
-const sgn = n => (n < 0 ? "−" : "+") + Math.abs(n);
-function tableHero(r){
-  const d = r.data || { class: r.cls, race: { name: r.race }, ac: { value: +r.ac }, hp: { max: +r.hp }, speed: +r.speed, abilities: r.ab || {},
-    skills: r.skills || [], expertise: r.ex || [], proficiencyBonus: +r.pb || 2, passivePerception: r.pp != null ? +r.pp : null,
-    halfProf: r.half === "true" || r.half === true, spellcasting: r.sc, languages: r.langs || [], saves: r.saves || [] };
-  const pb = +d.proficiencyBonus || 2, A = d.abilities || {};
-  const bonus = (id, ab) => md(A[ab]) + ((d.expertise || []).includes(id) ? 2 * pb : (d.skills || []).includes(id) ? pb : d.halfProf ? Math.floor(pb / 2) : 0);
-  return {
-    id: r.id, name: r.name, cls: d.class, race: d.race?.name, ac: d.ac?.value, hp: d.hp?.max, speed: d.speed,
-    pp: d.passivePerception ?? 10 + bonus("perception", "wis"), pi: 10 + bonus("insight", "wis"), pinv: 10 + bonus("investigation", "int"),
-    dc: d.spellcasting?.dc, atk: d.spellcasting?.attack, langs: d.languages || [], saves: d.saves || []
-  };
-}
-function readTablePick(){ try { return JSON.parse(localStorage.getItem(TABLE_KEY)); } catch (e) { return null; } }
-function viewTable(){
-  if (!tableRows) return `<p class="meta">Собираем числа…</p>`;
-  const heroes = tableRows.map(tableHero);
-  const pick = readTablePick();
-  const on = h => !pick || pick.includes(h.id);
-  const sel = heroes.filter(on);
-  const low = sel.length ? sel.reduce((a, b) => (b.pp < a.pp ? b : a)) : null;
-  const langs = [...new Set(sel.flatMap(h => h.langs))];
-  const tile = (l, v) => `<span><small>${l}</small><b>${v ?? "—"}</b></span>`;
-  return `
-  <section class="hero">
-    <p class="eyebrow"><button type="button" class="linkbtn" data-act="closeTable">← Мои персонажи</button></p>
-    <h1>Шпаргалка стола</h1>
-    <p class="lead">Числа, которые мастер спрашивает чаще всего. Отметь, кто сегодня играет.</p>
-  </section>
-  <div class="pick">${heroes.map(h => `<button type="button" class="pk" data-act="tablePick" data-id="${h.id}" aria-pressed="${on(h)}">${esc(h.name)}</button>`).join("")}</div>
-  ${sel.length ? `<section class="card tbl-sum">
-    ${low ? `<p><b>Засаду заметит не каждый.</b> Самое низкое пассивное Восприятие — ${low.pp} (${esc(low.name)}). Спрятанное со Сл ${low.pp + 1} и выше этот герой не заметит, если не ищет специально.</p>` : ""}
-    <p><b>Языки стола:</b> ${esc(langs.join(", ") || "—")}.</p>
-  </section>` : `<p class="meta">Никто не отмечен.</p>`}
-  <div class="tbl">${sel.map(h => `<article class="card tbl-card">
-    <div class="tbl-h"><h3>${esc(h.name)}</h3><span class="src">${esc([h.race, h.cls ? `${h.cls.name} ${h.cls.level}` : ""].filter(Boolean).join(" · "))}</span></div>
-    <div class="tbl-tiles">${tile("КД", h.ac)}${tile("Хиты", h.hp)}${tile("Скорость", h.speed ? h.speed / 5 + " кл." : "—")}${tile("Пасс. Восприятие", h.pp)}${tile("Пасс. Проницат.", h.pi)}${tile("Пасс. Анализ", h.pinv)}${h.dc ? tile("Сл заклинаний", h.dc) + tile("Атака закл.", sgn(h.atk)) : ""}</div>
-    <p class="meta">Спасброски с мастерством: ${h.saves.map(a => ABBR[a] || a).join(", ") || "—"}. Языки: ${esc(h.langs.join(", ") || "—")}.</p>
-  </article>`).join("")}</div>`;
-}
-async function openTable(){
-  tableMode = true; tableRows = null; render(); window.scrollTo({ top: 0 });
-  const { data, error: e } = await sb.from("characters").select(TABLE_COLS).order("name");
-  if (e){ console.error(e); toast("Не получилось собрать шпаргалку."); tableMode = false; render(); return; }
-  tableRows = data; render();
-}
-
 /* ---------- QR-код ссылки: библиотека грузится только когда нужна ---------- */
 let qrLoading = null;
 const loadQR = () => window.qrcode ? Promise.resolve() : (qrLoading = qrLoading || new Promise((ok, fail) => {
   const s = document.createElement("script"); s.src = "/vendor/qrcode.js"; s.onload = ok; s.onerror = fail; document.head.appendChild(s);
 }));
-async function showQR(c){
+const showQR = c => showQRFor({ title: c.name, link: shareLink(c), note: "Игрок наводит камеру телефона на код и сразу попадает в свой лист.", copyAct: "copy", copyId: c.id });
+async function showQRFor({ title, link, note, copyAct, copyId }){
   try { await loadQR(); } catch (e) { toast("Не получилось нарисовать QR-код."); return; }
-  const qr = window.qrcode(0, "M"); qr.addData(shareLink(c)); qr.make();
+  const qr = window.qrcode(0, "M"); qr.addData(link); qr.make();
   let dlg = document.getElementById("qrDlg");
   if (!dlg){ dlg = document.createElement("dialog"); dlg.id = "qrDlg"; dlg.className = "qr-dlg"; document.body.appendChild(dlg);
     dlg.addEventListener("click", e => { if (e.target === dlg) dlg.close(); }); }
   dlg.innerHTML = `<div class="qr-in">
-    <h3>${esc(c.name)}</h3>
+    <h3>${esc(title)}</h3>
     <div class="qr-box">${qr.createSvgTag({ cellSize: 6, margin: 2, scalable: true })}</div>
-    <p class="meta">Игрок наводит камеру телефона на код и сразу попадает в свой лист.</p>
-    <div class="char-acts"><button type="button" class="btn neutral sm" data-act="copy" data-id="${c.id}">Скопировать ссылку</button><button type="button" class="btn primary sm" data-act="qrClose">Готово</button></div>
+    <p class="meta">${esc(note)}</p>
+    <div class="char-acts"><button type="button" class="btn neutral sm" data-act="${copyAct}"${copyId ? ` data-id="${copyId}"` : ""}>Скопировать ссылку</button><button type="button" class="btn primary sm" data-act="qrClose">Готово</button></div>
   </div>`;
   try { dlg.showModal(); } catch (e) { dlg.setAttribute("open", ""); }
 }
@@ -427,8 +401,8 @@ async function showQR(c){
 /* Внутренние экраны (шаблоны, конструктор, редактор, шпаргалка, профиль) — отдельный шаг истории,
    чтобы кнопка «назад» браузера и жест «назад» на телефоне возвращали к списку, а не уводили с сайта */
 let historyStep = false;
-const inSubview = () => !!(session && (ED.r || profileMode || tableMode || CR.mode));
-function leaveSubviews(){ ED.r = null; profileMode = false; tableMode = false; tableRows = null; CR.mode = null; CR.draft = null; CR.editId = null; }
+const inSubview = () => !!(session && (ED.r || profileMode || TB.roomId || CR.mode));
+function leaveSubviews(){ ED.r = null; profileMode = false; closeRoom(); CR.mode = null; CR.draft = null; CR.editId = null; }
 window.addEventListener("popstate", () => {
   if (!historyStep) return;
   historyStep = false;
@@ -440,19 +414,21 @@ function syncHistory(){
 }
 
 function render(){
+  if (!authKnown) return;
   syncHistory();
   app.innerHTML = `
     ${header()}
     ${error ? `<div class="alert" role="alert">${esc(error)}</div>` : ""}
-    ${!session ? viewGuest() : ED.r ? viewEditor(ctx) : profileMode ? viewProfile() : tableMode ? viewTable() : CR.mode === "templates" ? viewTemplates(ctx) : CR.mode === "build" ? viewBuild(ctx) : viewMaster()}
+    ${!session ? viewGuest() : ED.r ? viewEditor(ctx) : profileMode ? viewProfile() : TB.roomId ? viewRoom() : CR.mode === "templates" ? viewTemplates(ctx) : CR.mode === "build" ? viewBuild(ctx) : viewMaster()}
     <footer class="foot">Правила D&amp;D 5e (2014). Часть материалов взята из System Reference Document 5.1 © Wizards of the Coast LLC, лицензия CC-BY-4.0. Популярность заклинаний — по данным D&amp;D Beyond.</footer>`;
 }
 
 /* ---------- работа с базой ---------- */
 async function loadChars(){
-  const { data, error: e } = await sb.from("characters")
-    .select(LIST_COLS)
-    .order("updated_at", { ascending: false });
+  const [{ data, error: e }] = await Promise.all([
+    sb.from("characters").select(LIST_COLS).order("updated_at", { ascending: false }),
+    loadTables()
+  ]);
   if (e){ error = "Не получилось загрузить персонажей. Обнови страницу."; console.error(e); }
   else { chars = data; error = ""; }
   loaded = true;
@@ -491,7 +467,7 @@ async function loadFull(id){
   return data;
 }
 const ctx = { esc, toast, render: () => render(), busy: () => busy, save: saveCharacter, loadChoices, loadFull,
-  setError: msg => { error = msg; } };
+  setError: msg => { error = msg; }, sb, chars: () => chars, nick: () => nickOf(), setTab, showQR: showQRFor };
 
 /* ---------- кнопки ---------- */
 const H = {
@@ -544,21 +520,13 @@ const H = {
     await saveCharacter(c, null);
     render();
   },
-  openTable: () => openTable(),
+  tab: b => { leaveSubviews(); setTab(b.dataset.v); render(); },
   openFeedback: () => openFeedback(),
   fbClose: () => { const t = document.getElementById("fbText"); if (t) t.value = ""; fbShot = null; document.getElementById("fbDlg")?.close(); },
   fbShotDel: () => { fbShot = null; fbShotView(); },
   fbSend: () => sendFeedback(),
   openProfile: () => { leaveSubviews(); profileMode = true; render(); window.scrollTo({ top: 0 }); },
   closeProfile: () => { profileMode = false; render(); window.scrollTo({ top: 0 }); },
-  closeTable: () => { tableMode = false; tableRows = null; render(); window.scrollTo({ top: 0 }); },
-  tablePick: b => {
-    const all = tableRows.map(r => r.id);
-    let pick = readTablePick() || all;
-    pick = pick.includes(b.dataset.id) ? pick.filter(x => x !== b.dataset.id) : [...pick, b.dataset.id];
-    try { localStorage.setItem(TABLE_KEY, JSON.stringify(pick)); } catch (e) {}
-    render();
-  },
   openBlank: () => openBlank(ctx),
   editManual: b => openEdit(b.dataset.id, ctx),
   cancelDel: () => { confirmDel = null; render(); },
@@ -567,12 +535,17 @@ const H = {
     const id = b.dataset.id;
     const { error: e } = await sb.from("characters").delete().eq("id", id);
     if (e){ console.error(e); toast("Не получилось удалить. Попробуй ещё раз."); }
-    else { chars = chars.filter(c => c.id !== id); toast("Персонаж удалён."); }
+    else {
+      chars = chars.filter(c => c.id !== id);
+      (TB.list || []).forEach(t => { t.heroes = (t.heroes || []).filter(h => h.id !== id); });
+      toast("Персонаж удалён.");
+    }
     confirmDel = null; busy = false; render();
   }
 };
 
-Object.assign(H, createHandlers(ctx), editorHandlers(ctx));
+Object.assign(H, createHandlers(ctx), editorHandlers(ctx), tablesHandlers());
+initTables(ctx);
 
 document.addEventListener("click", e => {
   const b = e.target.closest("[data-act]");
@@ -584,6 +557,7 @@ document.addEventListener("input", e => {
     document.querySelectorAll(".char").forEach(el => { el.hidden = !!q && !el.dataset.name.includes(q); });
     return;
   }
+  if (tablesInput(e)) return;
   if (createInput(e, ctx)) return;
   editorInput(e, ctx);
 });
@@ -594,14 +568,20 @@ document.addEventListener("change", e => {
 });
 // toggle не всплывает — слушаем на погружении
 document.addEventListener("toggle", editorToggle, true);
-document.addEventListener("keydown", editorKey);
+document.addEventListener("keydown", e => { if (tablesKey(e)) return; editorKey(e); });
+document.addEventListener("focusout", tablesBlur);
 
 /* ---------- запуск: Supabase сам сообщает, вошёл мастер или нет ---------- */
 sb.auth.onAuthStateChange((event, s) => {
+  authKnown = true;
   const wasIn = !!session;
   session = s;
   busy = false;
   // Запросы к базе — вне этого обработчика (так советует Supabase), поэтому через setTimeout
-  if (s && (!wasIn || !loaded)) { loaded = false; render(); setTimeout(loadChars, 0); }
-  else if (!s) { chars = []; loaded = false; render(); }
+  if (s && (!wasIn || !loaded)) {
+    loaded = false; render(); setTimeout(loadChars, 0);
+    // Приглашение открыли до входа — переспрашиваем: теперь видно, свой ли это стол и кто из моих героев уже за ним
+    if (!wasIn && TB.invite) setTimeout(() => loadInvite(TB.invite.code), 0);
+  }
+  else if (!s) { chars = []; loaded = false; TB.list = null; closeRoom(); render(); }
 });
