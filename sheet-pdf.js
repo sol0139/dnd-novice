@@ -47,11 +47,28 @@ const plural = (n, one, few, many) => { const t = n % 10, h = n % 100; return t 
 const RECHARGE = { long: "до длинного отдыха", short: "до короткого отдыха", turn: "за ход", day: "в день" };
 
 async function download(M){
+  const fonts = await loadFonts();
+  const logo = await loadImage("/icons/icon-192.png");
+  // Если на последней странице осталась пара строчек — собираем ещё раз поплотнее
+  let r = render(M, fonts, logo, false);
+  if (r.pages > 1 && r.lastFill < 150){
+    const t = render(M, fonts, logo, true);
+    if (t.pages < r.pages) r = t;
+  }
+  const doc = r.doc;
+  doc.setProperties({ title: `${M.name} — лист героя`, subject: M.raceLine, creator: "DnD Kids", author: "DnD Kids" });
+  const file = `${M.name.replace(/[\\/:*?"<>|]+/g, " ").trim() || "Герой"} — DnD Kids.pdf`;
+  if (M.returnBlob) return doc.output("blob");
+  doc.save(file);
+  return file;
+}
+
+function render(M, fonts, logo, tight){
   const { jsPDF } = window.jspdf;
   const doc = new jsPDF({ unit: "pt", format: "a4", compress: true });
-  const fonts = await loadFonts();
   for (const [name, b64] of Object.entries(fonts)){ doc.addFileToVFS(`${name}.ttf`, b64); doc.addFont(`${name}.ttf`, name, "normal"); }
-  const logo = await loadImage("/icons/icon-192.png");
+  // Плотность второй страницы и дальше: обычная и поплотнее
+  const K = tight ? { gap: 5, pad: 8, tlh: 9.8, sec: 2, eq: 6 } : { gap: 8, pad: 10, tlh: 10.4, sec: 6, eq: 9 };
 
   const PW = doc.internal.pageSize.getWidth(), PH = doc.internal.pageSize.getHeight();
   const MX = 34, TOP = 34, BOTTOM = PH - 44, CW = PW - 2 * MX;
@@ -275,7 +292,7 @@ async function download(M){
     // заголовок без единой карточки под ним не оставляем: места должно хватить на шапку и первую карточку
     const headH = 6 + 17 + (note ? para(note, 0, 0, CW - 14, R, 7.6, C.muted, 1.3, false) + 2 : 0) + 4;
     if (yy + headH + firstH > BOTTOM){ newPage(); yy = TOP; }
-    yy += 6;
+    yy += K.sec;
     dot(MX + 4, yy + 6.5, 4, color);
     font(HEAD, 11.5); ink(C.ink); put(title, MX + 14, yy);
     yy += 17;
@@ -283,14 +300,14 @@ async function download(M){
     col = [yy + 4, yy + 4];
   };
   // Карточка: цветная полоска слева, имя, подпись, текст, числа, клеточки зарядов
-  const PAD = 10, INNER = COLW - PAD * 2 - 4;
+  const PAD = K.pad, INNER = COLW - PAD * 2 - 4;
   const layout = c => {
     const pad = PAD, inner = INNER;
     const parts = [];
     font(B, 9.2); const nameL = wrap(c.name, inner - (c.right ? width(c.right) + 8 : 0));
     parts.push({ h: nameL.length * 11.6 });
     let metaL = []; if (c.meta){ font(R, 6.9); metaL = wrap(c.meta, inner); parts.push({ h: metaL.length * 8.8 + 1 }); }
-    let textL = []; if (c.text){ font(R, 7.9); textL = wrap(c.text, inner); parts.push({ h: textL.length * 10.4 + 3 }); }
+    let textL = []; if (c.text){ font(R, 7.9); textL = wrap(c.text, inner); parts.push({ h: textL.length * K.tlh + 3 }); }
     let numL = []; if (c.nums && c.nums.length){ font(B, 7.8); numL = wrap(c.nums.join("  ·  "), inner); parts.push({ h: numL.length * 10 + 3 }); }
     const marks = c.marks || 0;
     const markRows = marks ? Math.ceil(marks / 14) : 0;
@@ -311,14 +328,14 @@ async function download(M){
     if (c.right){ font(R, 6.8); ink(C.muted); put(c.right, x + COLW - pad, yy + 1.4, { align: "right" }); }
     yy += nameL.length * 11.6;
     if (metaL.length){ font(R, 6.9); ink(color === C.passive ? C.muted : color); metaL.forEach((l, i) => put(l, x + pad + 4, yy + i * 8.8)); yy += metaL.length * 8.8 + 1; }
-    if (textL.length){ yy += 2; font(R, 7.9); ink(C.ink2); textL.forEach((l, i) => put(l, x + pad + 4, yy + i * 10.4)); yy += textL.length * 10.4 + 1; }
+    if (textL.length){ yy += 2; font(R, 7.9); ink(C.ink2); textL.forEach((l, i) => put(l, x + pad + 4, yy + i * K.tlh)); yy += textL.length * K.tlh + 1; }
     if (numL.length){ yy += 2; font(B, 7.8); ink(C.ink); numL.forEach((l, i) => put(l, x + pad + 4, yy + i * 10)); yy += numL.length * 10 + 1; }
     if (marks){
       yy += 3;
       for (let k = 0; k < marks; k++) square(x + pad + 4 + (k % 14) * 11, yy + Math.floor(k / 14) * 11, 7.6, color === C.passive ? C.faint : color);
       if (c.marksNote){ font(R, 6.6); ink(C.muted); put(c.marksNote, x + pad + 4 + Math.min(marks, 14) * 11 + 4, yy + 0.6); }
     }
-    col[ci] = y0 + h + 8;
+    col[ci] = y0 + h + K.gap;
   };
 
   const kindColor = k => C[k] || C.passive;
@@ -381,7 +398,7 @@ async function download(M){
     M.equipment.forEach(e => {
       font(B, 8.4); const nl = wrap(e.qty ? `${e.name} ×${e.qty}` : e.name, inner);
       font(R, 7.2); const tl = e.note ? wrap(e.note, inner) : [];
-      const h = nl.length * 10.6 + tl.length * 9.2 + 9;
+      const h = nl.length * 10.6 + tl.length * 9.2 + K.eq;
       let ci = col[0] <= col[1] ? 0 : 1;
       if (col[ci] + h > BOTTOM){ ci = 1 - ci; if (col[ci] + h > BOTTOM){ newPage(); col = [TOP, TOP]; ci = 0; } }
       const x = MX + ci * (COLW + 12), y0 = col[ci];
@@ -391,10 +408,12 @@ async function download(M){
       col[ci] = y0 + h + 2;
     });
   }
+  let lastY = Math.max(col[0], col[1]);
   if (!notesDone){
-    let yy = Math.max(col[0], col[1]) + 10;
+    let yy = lastY + 10;
     if (yy + 34 + 6 * 18 > BOTTOM){ newPage(); yy = TOP; }
     notesBlock(yy, 12);
+    lastY = yy + 34 + 6 * 18;
   }
 
   /* ---------- подвал на каждой странице ---------- */
@@ -407,11 +426,7 @@ async function download(M){
     font(R, 6); ink(C.faint); put("Правила D&D 5e (2014). Часть материалов — SRD 5.1 © Wizards of the Coast, CC-BY-4.0.", MX, PH - 14);
   }
 
-  doc.setProperties({ title: `${M.name} — лист героя`, subject: M.raceLine, creator: "DnD Kids", author: "DnD Kids" });
-  const file = `${M.name.replace(/[\\/:*?"<>|]+/g, " ").trim() || "Герой"} — DnD Kids.pdf`;
-  if (M.returnBlob) return doc.output("blob");
-  doc.save(file);
-  return file;
+  return { doc, pages, lastFill: lastY - TOP };
 }
 
 window.NovicePDF = { download };
