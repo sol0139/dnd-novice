@@ -5,6 +5,9 @@
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <meta name="description" content="Чарник D&D для новичков: способности разложены по ходу, всё объяснено простыми словами.">
 <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='9' fill='%232EB41B'/%3E%3Cpath d='M16 6l8.5 4.9v10.2L16 26l-8.5-4.9V10.9z M16 6l-5 14h10z' fill='none' stroke='white' stroke-width='1.8' stroke-linejoin='round'/%3E%3C/svg%3E">
+<link rel="apple-touch-icon" href="/icons/apple-touch-icon.png">
+<link rel="manifest" href="/manifest.webmanifest">
+<meta name="theme-color" content="#2EB41B">
 <title>Чарник новичка</title>
 <script src="/config.js"></script>
 <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -224,6 +227,19 @@ h2 .dot{flex:none;width:10px;height:10px;border-radius:50%;background:var(--k)}
 .hello ol{margin:0;padding-left:20px;display:flex;flex-direction:column;gap:6px;font-size:15px;line-height:1.45;color:var(--fg-2)}
 .hello .btn{align-self:flex-start}
 .offline{padding:12px 16px;border-radius:16px;background:color-mix(in srgb,var(--k-bonus) 14%,var(--surface));font-size:14px;line-height:1.4}
+
+/* Печать: все вкладки подряд, без кнопок и теней */
+@media print{
+  body{background:#fff}
+  .wrap{max-width:none;padding:0;gap:14px}
+  .top-btns,.quick,.tabs,.turnbar,.turn-h,.hp-tools,.hp-btns,.hp-bar,.hp-meter,.addcond,.toast-wrap,.hello,.offline,.use-btns,.use button,.cast button,.spend button,.slot-row .use-btns,.foot,.x,#p-gear .sec:last-child,.notes:placeholder-shown{display:none !important}
+  .panel{display:flex !important;gap:14px}
+  .card,.ab,.tile,.abil{box-shadow:none !important;border:1px solid #ccc !important;break-inside:avoid}
+  .abil .ak,.why summary{display:none}
+  .sec{break-inside:auto}
+  h2{font-size:17px}
+  .notes{box-shadow:none;border:1px solid #ccc;min-height:0}
+}
 
 /* Магия */
 .badges{display:flex;flex-wrap:wrap;gap:6px}
@@ -455,7 +471,7 @@ const spendLeft = f => { const p = pool(f); return p ? Math.floor(usesLeft(p) / 
 
 /* ---------- состояние ---------- */
 const freshTurn  = () => ({ action: null, bonus: null });
-const freshState = () => ({ hp: CH.hp.max, temp: 0, used: {}, slots: {}, hitDiceUsed: 0, turn: freshTurn(),
+const freshState = () => ({ hp: CH.hp.max, temp: 0, round: 1, used: {}, slots: {}, hitDiceUsed: 0, turn: freshTurn(),
   conc: null, conds: [], death: { s: 0, f: 0 }, insp: false, notes: "" });
 // [[ключ|текст]] → просто текст (внутри кнопок подчёркнутые слова не нужны)
 const plainText  = s => String(s).replace(/\[\[[a-z0-9-]+\|([^\]]+)\]\]/g, "$1");
@@ -703,6 +719,13 @@ function panelGear(){
       <div class="sec-h"><h2>Заметки</h2><p>Имена, подсказки, найденные вещи, долги. Видно только на этом устройстве.</p></div>
       <textarea class="notes" id="notes" placeholder="Например: трактирщик Борис что-то скрывает. Должны гному 5 зм.">${esc(S.notes || "")}</textarea>
     </section>
+    <section class="sec">
+      <div class="sec-h"><h2>Этот лист</h2><p>Печать соберёт все вкладки на бумагу. Сброс вернёт полные хиты и способности, очистит заметки — пригодится, если телефоном пользуется новый игрок.</p></div>
+      <div class="hp-tools">
+        <button type="button" class="btn neutral" data-act="print">Распечатать</button>
+        <button type="button" class="btn neutral" data-act="wipe">Начать заново</button>
+      </div>
+    </section>
   </section>`;
 }
 
@@ -877,7 +900,7 @@ function refresh(){
     if (t) t.dataset.spent = String(!!S.turn[slot]);
   });
   const now = [S.turn.action, S.turn.bonus].filter(Boolean).map(c => c.name);
-  $("#turnNow").textContent = now.length ? "В этом ходу: " + now.join(" · ") : "Ещё ничего не выбрано";
+  $("#turnNow").innerHTML = `<b>Раунд ${S.round || 1}</b>${(S.round || 1) > 1 ? ` <button type="button" class="linkbtn" data-act="roundReset">конец боя</button>` : ""}<br>${esc(now.length ? "В этом ходу: " + now.join(" · ") : "Ещё ничего не выбрано")}`;
 
   themeIcon();
   if (drawerMode && drawerMode.startsWith("rest-") && $("#drawer").open) renderRest(drawerMode.slice(5));
@@ -1098,6 +1121,19 @@ const H = {
     S.insp = !S.insp;
     toast(S.insp ? "Вдохновение! Потрать его, чтобы бросить любую атаку, проверку или спасбросок с преимуществом. Его дарит мастер за яркую игру." : "Вдохновение потрачено.");
   },
+  print: () => {
+    $$(".panel").forEach(p => { p.hidden = false; });
+    $$("details").forEach(d => { d.dataset.wasOpen = d.open; d.open = true; });
+    window.print();
+  },
+  wipe: () => {
+    snap();
+    const notes = S.notes;
+    S = freshState();
+    toast("Всё как в начале: полные хиты, способности на месте, заметки очищены.", true);
+    snapshot.notes = notes;
+    const n = $("#notes"); if (n) n.value = "";
+  },
   helloDone: () => { try { localStorage.setItem(HELLO_KEY, "1"); } catch (e) {} const h = $("#hello"); if (h) h.remove(); },
   hpset: b => { const i = +b.dataset.i; setHP(S.hp === i ? i - 1 : i); },
 
@@ -1188,8 +1224,10 @@ const H = {
   },
   newturn: () => {
     S.turn = freshTurn();
-    toast("Новый ход: действие и бонусное снова доступны.");
+    S.round = (S.round || 1) + 1;
+    toast(`Раунд ${S.round}. Действие и бонусное снова доступны.${S.round === 11 ? " Прошла минута: заклинания «на 1 минуту» закончились." : ""}`);
   },
+  roundReset: () => { S.round = 1; S.turn = freshTurn(); toast("Бой закончен: счёт раундов сброшен."); },
 
   // Отдых: кнопки наверху открывают шторку, отдых случается по кнопке внутри
   short: () => { drawerMode = "rest-short"; renderRest("short"); openDrawer(); },
@@ -1209,14 +1247,15 @@ const H = {
   restLong: () => {
     snap();
     S.hp = CH.hp.max; S.used = {}; S.slots = {}; S.hitDiceUsed = 0; S.turn = freshTurn();
-    S.temp = 0; S.conc = null; S.death = { s: 0, f: 0 };
+    S.temp = 0; S.conc = null; S.death = { s: 0, f: 0 }; S.round = 1;
     drawer.close();
     toast(`Длинный отдых. Хиты полные, способности${slotLevels().length ? ", ячейки" : ""} и кость хитов вернулись.`, true);
   },
   undo: () => {
     if (!snapshot) return;
     S = snapshot; snapshot = null;
-    toast("Отдых отменён.");
+    const n = $("#notes"); if (n) n.value = S.notes || "";
+    toast("Отменено.");
   },
 
   // Кость хитов живёт внутри шторки короткого отдыха: нажал — потратил, ещё раз — вернул
@@ -1242,6 +1281,12 @@ document.addEventListener("click", e => {
   if (!b || !H[b.dataset.act]) return;
   H[b.dataset.act](b, e);
   refresh();
+});
+// После печати возвращаем вкладки как были
+window.addEventListener("afterprint", () => {
+  let cur = "stats"; try { cur = localStorage.getItem(TAB_KEY) || "stats"; } catch (e) {}
+  setTab(cur, false);
+  $$("details").forEach(d => { if (d.dataset.wasOpen !== undefined){ d.open = d.dataset.wasOpen === "true"; delete d.dataset.wasOpen; } });
 });
 // Заметки сохраняются на лету, без перерисовки
 document.addEventListener("input", e => {
