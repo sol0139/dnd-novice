@@ -28,6 +28,8 @@
 .iconbtn{flex:none;width:48px;height:48px;border-radius:50%;border:0;background:var(--glass);color:var(--fg);display:grid;place-items:center}
 .me{display:inline-flex;align-items:center;gap:8px;height:48px;padding:0 6px 0 6px;border-radius:24px;background:var(--glass)}
 .me img,.me .ph{width:36px;height:36px;border-radius:50%;object-fit:cover;background:var(--neutral)}
+button.me{border:0;font:inherit;color:var(--fg);cursor:pointer}
+button.me:active{transform:scale(.97)}
 .me span{max-width:9em;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-weight:500;font-size:14.5px;padding-right:4px}
 
 .card{background:var(--surface);border-radius:24px;box-shadow:var(--shadow)}
@@ -252,6 +254,25 @@ h2{font-family:var(--f-head);font-weight:500;font-size:20px;line-height:1.15;let
 .pk small{font-size:12px}
 @media (max-width:359px){ .ed-grid{grid-template-columns:1fr} }
 @media (max-width:420px){ .slot-ed{grid-template-columns:repeat(3,minmax(0,1fr))} }
+
+/* Профиль мастера */
+.pf-who{display:flex;align-items:center;gap:14px}
+.pf-who img,.pf-who .ph{flex:none;width:64px;height:64px;border-radius:50%;object-fit:cover;background:var(--neutral)}
+.pf-who h1{font-size:28px}
+.pf-tiles{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px}
+.pf-tile{padding:16px 18px;display:flex;flex-direction:column;gap:4px;min-width:0}
+.pf-tile span{font-size:13px;color:var(--fg-3)}
+.pf-tile b{font-family:var(--f-head);font-weight:600;font-size:28px;line-height:1.1;letter-spacing:-.5px}
+.pf-tile small{font-size:13px;line-height:1.3;color:var(--fg-3)}
+.pf-sec{padding:18px 20px;display:flex;flex-direction:column;gap:12px}
+.meter{height:12px;border-radius:6px;background:var(--neutral);overflow:hidden}
+.meter i{display:block;height:100%;width:var(--w);border-radius:6px;background:var(--accent)}
+.bars{display:flex;flex-direction:column;gap:8px}
+.bar{display:grid;grid-template-columns:minmax(0,11.5em) minmax(0,1fr) 2em;align-items:center;gap:10px;font-size:14.5px}
+.bar span{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.bar i{display:block;height:10px;width:var(--w);border-radius:5px;background:color-mix(in srgb,var(--accent) 70%,transparent)}
+.bar b{font-family:var(--f-head);font-weight:600;text-align:right}
+.pf-out{display:flex;flex-direction:column;align-items:flex-start;gap:8px;padding-top:4px}
 
 /* Шаблоны */
 .tpls{display:flex;flex-direction:column;gap:10px}

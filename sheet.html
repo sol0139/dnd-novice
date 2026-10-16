@@ -39,6 +39,11 @@
 .top{display:flex;flex-direction:column;gap:16px}
 .top-row{display:flex;align-items:center;justify-content:space-between;gap:12px;min-height:48px}
 .eyebrow{font-size:14px;font-weight:500;color:var(--fg-3)}
+/* Логотип в шапке листа: дорога на главную, даже если у браузера нет кнопки «назад» */
+.home{flex:none;width:44px;height:44px;border-radius:14px;background:var(--accent);color:#fff;display:grid;place-items:center;text-decoration:none}
+.home svg{width:24px;height:24px;fill:none;stroke:currentColor;stroke-width:1.8;stroke-linejoin:round}
+.home:active{transform:scale(.95)}
+@media print{ .home{display:none} }
 .iconbtn{flex:none;width:48px;height:48px;border-radius:50%;border:0;background:var(--glass);color:var(--fg);display:grid;place-items:center}
 .who{display:flex;flex-direction:column;gap:8px}
 h1{font-family:var(--f-head);font-weight:600;font-size:34px;line-height:1.05;letter-spacing:-.5px}
@@ -775,7 +780,7 @@ function render(){
   app.innerHTML = `
   <header class="top">
     <div class="top-row">
-      <p class="eyebrow">${esc(CH.race.name)} · ${esc(CH.class.name)} ${CH.class.level} уровня</p>
+      <a class="home" href="/" aria-label="Чарник новичка — на главную" title="На главную"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3l7.5 4.3v9.4L12 21l-7.5-4.3V7.3z M12 3l-4.5 12h9z"/></svg></a>
       <div class="top-btns">
         <button type="button" class="pillbtn" data-act="dict" aria-haspopup="dialog">
           <svg class="i" viewBox="0 0 24 24" aria-hidden="true"><path d="M5 5a2 2 0 0 1 2-2h12v15H7a2 2 0 0 0-2 2z"/><path d="M5 20a1 1 0 0 0 1 1h13"/><path d="M9.5 7.5h5"/></svg>Словарик
@@ -784,6 +789,7 @@ function render(){
       </div>
     </div>
     <div class="who">
+      <p class="eyebrow">${esc(CH.race.name)} · ${esc(CH.class.name)} ${CH.class.level} уровня</p>
       <h1>${esc(CH.name)}</h1>
       ${CH.pitch ? `<p class="pitch">${rich(CH.pitch)}</p>` : ""}
       ${CH.background?.name ? `<p class="bgline">Прошлое: ${esc(CH.background.name)}${CH.background.note ? ", " + esc(CH.background.note) : ""}</p>` : ""}

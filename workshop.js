@@ -18,7 +18,8 @@ let loaded = false;     // список уже пришёл из базы
 let confirmDel = null;  // id персонажа, которого спрашиваем «удалить?»
 let busy = false;       // идёт запрос — кнопки на это время гаснут
 // Для списка не тянем лист целиком: только имя расы и класс. Бесплатный трафик Supabase — 5 ГБ в месяц.
-const LIST_COLS = "id,name,share_slug,updated_at,race:data->race->>name,cls:data->class,app:data->source->>app";
+const LIST_COLS = "id,name,share_slug,created_at,updated_at,race:data->race->>name,cls:data->class,app:data->source->>app";
+let profileMode = false; // профиль мастера: статистика и выход
 let tableMode = false;  // шпаргалка стола: ключевые числа всех героев на одном экране
 let tableRows = null;
 let error = readAuthError();
@@ -62,7 +63,7 @@ function header(){
   if (session){
     const m = session.user.user_metadata || {};
     const nick = m.custom_claims?.global_name || m.full_name || m.name || m.user_name || "Мастер";
-    me = `<span class="me">${m.avatar_url ? `<img src="${esc(m.avatar_url)}" alt="">` : `<span class="ph"></span>`}<span>${esc(nick)}</span></span>`;
+    me = `<button type="button" class="me" data-act="openProfile" aria-label="Профиль: ${esc(nick)}">${m.avatar_url ? `<img src="${esc(m.avatar_url)}" alt="">` : `<span class="ph"></span>`}<span>${esc(nick)}</span></button>`;
   }
   return `<header class="top-row">${BRAND}<div class="top-btns">${me}${themeBtn()}</div></header>`;
 }
@@ -144,8 +145,7 @@ function viewMaster(){
       <button type="button" class="way wide" data-act="openBlank">${WAY_ICONS.blank}<b>Вручную</b><span>Пустой лист: впиши всё сам, без правил и файлов</span></button>
     </div>
   </section>
-  ${list}
-  <p class="meta"><button type="button" class="btn surface sm" data-act="logout">Выйти</button></p>`;
+  ${list}`;
 }
 
 const WAY_ICONS = {
@@ -155,6 +155,52 @@ const WAY_ICONS = {
   file:  `<svg class="i" viewBox="0 0 24 24" aria-hidden="true"><path d="M7 3h7l5 5v13H7z"/><path d="M14 3v5h5"/><path d="M10 14l2 2 3-4"/></svg>`,
   blank: `<svg class="i" viewBox="0 0 24 24" aria-hidden="true"><rect x="5" y="3" width="14" height="18" rx="3"/><path d="M9 8h6M9 12h6M9 16h3"/></svg>`
 };
+
+/* ---------- профиль мастера ---------- */
+const nickOf = () => { const m = session?.user?.user_metadata || {}; return m.custom_claims?.global_name || m.full_name || m.name || m.user_name || "Мастер"; };
+const plural = (n, one, few, many) => { const t = n % 10, h = n % 100; return t === 1 && h !== 11 ? one : t >= 2 && t <= 4 && (h < 12 || h > 14) ? few : many; };
+function viewProfile(){
+  const m = session.user.user_metadata || {};
+  const n = chars.length;
+  const levels = chars.map(c => +(c.cls ?? c.data?.class)?.level || 0).filter(Boolean);
+  const avg = levels.length ? (levels.reduce((a, b) => a + b, 0) / levels.length) : 0;
+  const count = key => { const o = {}; chars.forEach(c => { const k = key(c); if (k) o[k] = (o[k] || 0) + 1; }); return Object.entries(o).sort((a, b) => b[1] - a[1]); };
+  const byClass = count(c => (c.cls ?? c.data?.class)?.name);
+  const byRace = count(c => c.race ?? c.data?.race?.name);
+  const APP = { builder: "Конструктор и шаблоны", lss: "Long Story Short", manual: "Вручную" };
+  const bySource = count(c => APP[c.app ?? c.data?.source?.app] || "Первые версии");
+  const dates = chars.map(c => c.created_at).filter(Boolean).sort();
+  const last = chars.map(c => c.updated_at).filter(Boolean).sort().pop();
+  const since = session.user.created_at;
+  const bars = (rows, total) => rows.length ? `<div class="bars">${rows.map(([k, v]) => `<div class="bar"><span>${esc(k)}</span><i style="--w:${Math.max(6, Math.round(v / total * 100))}%"></i><b>${v}</b></div>`).join("")}</div>` : `<p class="meta">Пока пусто.</p>`;
+  const tile = (l, v, s) => `<div class="pf-tile card"><span>${l}</span><b>${v}</b>${s ? `<small>${s}</small>` : ""}</div>`;
+  return `
+  <section class="hero">
+    <p class="eyebrow"><button type="button" class="linkbtn" data-act="closeProfile">← Мои персонажи</button></p>
+    <div class="pf-who">
+      ${m.avatar_url ? `<img src="${esc(m.avatar_url)}" alt="">` : `<span class="ph"></span>`}
+      <div><h1>${esc(nickOf())}</h1><p class="meta">Вход через Discord${since ? ` · в мастерской с ${new Date(since).toLocaleDateString("ru-RU", { day: "numeric", month: "long", year: "numeric" })}` : ""}</p></div>
+    </div>
+  </section>
+  <div class="pf-tiles">
+    ${tile("Персонажей", n, `${plural(n, "герой", "героя", "героев")} в мастерской`)}
+    ${tile("Средний уровень", avg ? avg.toFixed(1).replace(".0", "").replace(".", ",") : "—", levels.length ? `от ${Math.min(...levels)} до ${Math.max(...levels)}` : "")}
+    ${tile("Разных классов", byClass.length, byClass[0] && byClass[0][1] > 1 ? `чаще всего — ${esc(byClass[0][0].toLowerCase())}` : byClass.length ? "все разные" : "")}
+    ${tile("Последняя правка", last ? when(last) : "—", dates[0] ? `первый герой — ${when(dates[0])}` : "")}
+  </div>
+  <section class="card pf-sec">
+    <h2>Место в мастерской</h2>
+    <div class="meter"><i style="--w:${Math.min(100, n)}%"></i></div>
+    <p class="meta">${n} из 100 мест занято. Один герой весит около 6 КБ, бесплатной базы хватит с огромным запасом.</p>
+  </section>
+  <section class="card pf-sec"><h2>Классы</h2>${bars(byClass, n || 1)}</section>
+  <section class="card pf-sec"><h2>Расы</h2>${bars(byRace, n || 1)}</section>
+  <section class="card pf-sec"><h2>Откуда герои</h2>${bars(bySource, n || 1)}</section>
+  <section class="pf-out">
+    <button type="button" class="btn surface" data-act="logout">Выйти из аккаунта</button>
+    <p class="meta">Персонажи останутся в базе, ссылки у игроков продолжат работать.</p>
+  </section>`;
+}
 
 /* ---------- шпаргалка стола ---------- */
 // Только нужные поля, без описаний способностей
@@ -229,11 +275,27 @@ async function showQR(c){
   try { dlg.showModal(); } catch (e) { dlg.setAttribute("open", ""); }
 }
 
+/* Внутренние экраны (шаблоны, конструктор, редактор, шпаргалка, профиль) — отдельный шаг истории,
+   чтобы кнопка «назад» браузера и жест «назад» на телефоне возвращали к списку, а не уводили с сайта */
+let historyStep = false;
+const inSubview = () => !!(session && (ED.r || profileMode || tableMode || CR.mode));
+function leaveSubviews(){ ED.r = null; profileMode = false; tableMode = false; tableRows = null; CR.mode = null; CR.draft = null; CR.editId = null; }
+window.addEventListener("popstate", () => {
+  if (!historyStep) return;
+  historyStep = false;
+  if (inSubview()){ leaveSubviews(); render(); window.scrollTo({ top: 0 }); }
+});
+function syncHistory(){
+  if (inSubview() && !historyStep){ history.pushState({ sub: true }, ""); historyStep = true; }
+  else if (!inSubview() && historyStep){ historyStep = false; history.back(); }
+}
+
 function render(){
+  syncHistory();
   app.innerHTML = `
     ${header()}
     ${error ? `<div class="alert" role="alert">${esc(error)}</div>` : ""}
-    ${!session ? viewGuest() : ED.r ? viewEditor(ctx) : tableMode ? viewTable() : CR.mode === "templates" ? viewTemplates(ctx) : CR.mode === "build" ? viewBuild(ctx) : viewMaster()}
+    ${!session ? viewGuest() : ED.r ? viewEditor(ctx) : profileMode ? viewProfile() : tableMode ? viewTable() : CR.mode === "templates" ? viewTemplates(ctx) : CR.mode === "build" ? viewBuild(ctx) : viewMaster()}
     <footer class="foot">Правила D&amp;D 5e (2014). Часть материалов взята из System Reference Document 5.1 © Wizards of the Coast LLC, лицензия CC-BY-4.0. Популярность заклинаний — по данным D&amp;D Beyond.</footer>`;
 }
 
@@ -303,7 +365,7 @@ const H = {
     });
     if (e){ busy = false; error = `Не получилось открыть Discord: ${e.message}`; render(); }
   },
-  logout: async () => { await sb.auth.signOut(); },
+  logout: async () => { profileMode = false; await sb.auth.signOut(); },
   theme: () => {
     const next = effTheme() === "dark" ? "light" : "dark";
     document.documentElement.setAttribute("data-theme", next);
@@ -334,6 +396,8 @@ const H = {
     render();
   },
   openTable: () => openTable(),
+  openProfile: () => { leaveSubviews(); profileMode = true; render(); window.scrollTo({ top: 0 }); },
+  closeProfile: () => { profileMode = false; render(); window.scrollTo({ top: 0 }); },
   closeTable: () => { tableMode = false; tableRows = null; render(); window.scrollTo({ top: 0 }); },
   tablePick: b => {
     const all = tableRows.map(r => r.id);
