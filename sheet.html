@@ -177,21 +177,13 @@ h2 .dot{flex:none;width:10px;height:10px;border-radius:50%;background:var(--k)}
 .ca dd{font-size:14.5px;line-height:1.45;color:var(--fg-3)}
 .ca dd b{color:var(--fg);font-weight:600}
 
-/* Хиты: урон и лечение числом, временные хиты, длинная полоска для больших запасов */
+/* Хиты: длинная полоска для больших запасов; ряд кнопок внизу «Снаряги» */
 .hp-tools{display:flex;flex-wrap:wrap;gap:8px}
 .hp-tools .btn{flex:1;min-width:8em}
 .btn.danger{background:var(--danger);color:#fff}
-.temp{display:inline-flex;align-items:center;height:26px;padding:0 10px;margin-left:8px;border-radius:13px;background:color-mix(in srgb,var(--k-bonus) 18%,transparent);
-  font-family:var(--f-body);font-size:13px;font-weight:600;color:var(--fg-2);letter-spacing:0;vertical-align:middle}
 .hp-meter{position:relative;height:22px;border-radius:9px;background:var(--neutral);overflow:hidden;cursor:pointer}
 .hp-meter i{position:absolute;inset:0 auto 0 0;background:var(--accent);border-radius:9px;transition:width .2s}
 .hp-meter.low i{background:var(--danger)}
-.num-in{width:100%;height:64px;padding:0 16px;border:0;border-radius:18px;background:var(--neutral);color:var(--fg);
-  font-family:var(--f-head);font-weight:600;font-size:32px;text-align:center}
-.quicknums{display:flex;flex-wrap:wrap;gap:6px}
-.quicknums button{flex:1;min-width:3em;min-height:44px;border:0;border-radius:14px;background:var(--neutral);color:var(--fg);font-family:var(--f-head);font-weight:600;font-size:16px}
-.dr-acts{display:grid;grid-template-columns:1fr 1fr;gap:8px}
-.dr-acts .btn:last-child:nth-child(odd){grid-column:1 / -1}
 /* Спасброски от смерти */
 .ds{display:flex;flex-direction:column;gap:8px;width:100%}
 .ds-row{display:flex;align-items:center;gap:10px;font-size:14px}
@@ -200,19 +192,15 @@ h2 .dot{flex:none;width:10px;height:10px;border-radius:50%;background:var(--k)}
 .ds-row i.on{opacity:1;background:currentColor}
 .ds-row.ok{color:var(--accent-ink)}.ds-row.bad{color:var(--danger)}
 .ds-btns{display:flex;flex-wrap:wrap;gap:8px}
-/* Состояния и концентрация */
+/* Концентрация */
 .conds{display:flex;flex-direction:column;gap:8px}
+.conds[hidden]{display:none}
 .cond{display:flex;align-items:flex-start;gap:12px;padding:12px 10px 12px 16px;border-radius:18px;background:color-mix(in srgb,var(--danger) 9%,var(--surface));box-shadow:var(--shadow)}
 .cond div{flex:1;min-width:0;display:flex;flex-direction:column;gap:2px}
 .cond b{font-weight:600;font-size:15px}
 .cond p{font-size:13.5px;line-height:1.35;color:var(--fg-3)}
 .cond.conc{background:color-mix(in srgb,var(--k-reaction) 12%,var(--surface))}
 .x{flex:none;width:36px;height:36px;border:0;border-radius:50%;background:var(--neutral);color:var(--fg-2);font-size:18px;line-height:1}
-.addcond{align-self:flex-start;min-height:40px;padding:8px 14px;border:1.5px dashed color-mix(in srgb,var(--fg-3) 45%,transparent);border-radius:16px;background:transparent;color:var(--fg-2);font-family:var(--f-btn);font-weight:600;font-size:14px}
-.cond-opt{display:flex;flex-direction:column;align-items:flex-start;gap:4px;width:100%;padding:14px 16px;border:0;border-radius:18px;background:var(--neutral);color:var(--fg);text-align:left}
-.cond-opt[aria-pressed="true"]{background:color-mix(in srgb,var(--danger) 14%,var(--neutral));box-shadow:inset 0 0 0 1.5px color-mix(in srgb,var(--danger) 45%,transparent)}
-.cond-opt b{font-weight:600;font-size:15.5px}
-.cond-opt span{font-size:13.5px;line-height:1.4;color:var(--fg-3)}
 /* Вдохновение, подсказки, заметки, приветствие */
 .qbtn[aria-pressed="true"]{background:color-mix(in srgb,var(--k-bonus) 22%,var(--surface))}
 .qbtn svg{width:18px;height:18px;fill:none;stroke:currentColor;stroke-width:1.9;stroke-linejoin:round}
@@ -241,6 +229,22 @@ h2 .dot{flex:none;width:10px;height:10px;border-radius:50%;background:var(--k)}
   .notes{box-shadow:none;border:1px solid #ccc;min-height:0}
 }
 
+/* Заклинания лентой с боковым скроллом внутри секций хода */
+.srow{display:flex;flex-direction:column;gap:6px;margin-top:6px}
+.srow-h{display:flex;align-items:baseline;gap:4px 10px;flex-wrap:wrap}
+.srow-h b{font-weight:600;font-size:15.5px}
+.srow-n{font-size:13px;color:var(--fg-3)}
+.srow-hint{margin-left:auto;font-size:12.5px;color:var(--fg-3)}
+.hscroll{display:flex;align-items:stretch;gap:10px;overflow-x:auto;overscroll-behavior-x:contain;scroll-snap-type:x mandatory;-webkit-overflow-scrolling:touch;
+  margin-inline:calc(-1 * max(16px,env(safe-area-inset-left,0px)));padding:4px max(16px,env(safe-area-inset-left,0px)) 16px;
+  scroll-padding-inline:max(16px,env(safe-area-inset-left,0px));scrollbar-width:none}
+.hscroll::-webkit-scrollbar{display:none}
+.hscroll > .ab{flex:0 0 min(300px,84%);scroll-snap-align:start}
+.hscroll > .ab .cast{margin-top:auto}
+.slots-h{display:flex;flex-wrap:wrap;align-items:baseline;gap:4px 10px;padding:8px 0 2px;font-weight:600;font-size:15px}
+.slots-h span{font-weight:400;font-size:13px;color:var(--fg-3)}
+@media print{ .hscroll{flex-wrap:wrap;overflow:visible;margin:0;padding:0} .hscroll > .ab{flex:1 1 280px} .srow-hint{display:none} }
+
 /* Магия */
 .badges{display:flex;flex-wrap:wrap;gap:6px}
 .badge{display:inline-flex;align-items:center;height:26px;padding:0 10px;border-radius:13px;background:var(--neutral);font-size:12.5px;font-weight:500;color:var(--fg-3)}
@@ -252,7 +256,10 @@ h2 .dot{flex:none;width:10px;height:10px;border-radius:50%;background:var(--k)}
 .slot-row{display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:10px 12px;padding:10px 0}
 .slot-row + .slot-row{border-top:1px solid var(--line)}
 .slot-row b{font-weight:600;font-size:15.5px}
-.slot-row .use-info{flex:1}
+.slot-row .use-info{flex:1;white-space:nowrap}
+.slot-row .use-btns{margin-left:auto}
+@media (max-width:420px){ .slot-row .use-info span:last-child{display:none} }
+.slot-row .btn{min-height:40px;padding:8px 14px;font-size:14px}
 .cast{display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:10px;padding-top:2px}
 .cast .meta{flex:1;min-width:12em}
 .spend{display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:10px;padding-top:2px}
@@ -314,9 +321,6 @@ h2 .dot{flex:none;width:10px;height:10px;border-radius:50%;background:var(--k)}
 /* На узком телефоне «Характеристики» с иконкой не влезают в треть ширины — там подпись «Статы» */
 .tab .short{display:none}
 @media (max-width:479px){ .tab .long{display:none} .tab .short{display:inline} }
-/* Четыре вкладки у заклинателя: на узком экране чуть плотнее */
-@media (max-width:479px){ .tabs.t4 .tab{padding:10px 4px;gap:4px;font-size:13px} .tabs.t4 .tab svg.i{width:17px;height:17px} }
-@media (max-width:359px){ .tabs.t4 .tab svg.i{display:none} }
 .tab:hover{color:var(--fg)}
 .tab[aria-selected="true"]{background:var(--accent);color:var(--on-accent)}
 .top-btns{display:flex;align-items:center;gap:8px;flex:none}
@@ -459,7 +463,6 @@ const usesLeft  = f => f.uses.max - (S.used[f.id] || 0);
 const attackOf  = f => f.attack || byId[f.attackRef].attack;
 const scene     = f => f.scene || "combat";
 // Заклинания и ячейки
-const hasMagic  = () => (CH.spells || []).length > 0 || Object.values((CH.spellcasting || {}).slots || {}).some(n => n > 0);
 const SC        = () => CH.spellcasting || null;
 const slotMax   = l => ((SC() || {}).slots || {})[l] || 0;
 const slotLeft  = l => slotMax(l) - ((S.slots || {})[l] || 0);
@@ -567,13 +570,25 @@ function commonActions(){
   return `<details class="common card"><summary><span>Ещё действия, доступные любому герою</span><span class="chev" aria-hidden="true"></span></summary><dl>${items}</dl></details>`;
 }
 
-function group(kind, list){
-  if (!list.length) return "";
+/* Заклинания внутри секции хода: по ленте на каждый круг, листаются вбок */
+function spellRows(spells){
+  return [0, 1, 2, 3, 4, 5].map(l => {
+    const ls = spells.filter(sp => sp.level === l);
+    if (!ls.length) return "";
+    return `<div class="srow">
+      <div class="srow-h"><b>${l === 0 ? term("cantrip", "Заговоры") : `Заклинания ${l} круга`}</b><span class="srow-n">${l === 0 ? "бесплатно" : `<span class="slh" data-l="${l}"></span>`}</span>${ls.length > 1 ? `<span class="srow-hint">${ls.length} · листай →</span>` : ""}</div>
+      <div class="hscroll">${ls.map(spellCard).join("")}</div>
+    </div>`;
+  }).join("");
+}
+function group(kind, list, spells = []){
+  if (!list.length && !spells.length) return "";
   const K = KINDS[kind];
   return `<section class="sec" data-kind="${kind}">
     <div class="sec-h"><h2><span class="dot" aria-hidden="true"></span>${K.term ? term(K.term, K.name) : esc(K.name)}</h2><p>${K.note}</p></div>
     ${list.map(card).join("")}
     ${kind === "action" ? commonActions() : ""}
+    ${spellRows(spells)}
   </section>`;
 }
 
@@ -640,17 +655,13 @@ function panelCombat(){
     <section class="sec">
       <div class="card hp">
         <div class="hp-row">
-          <div><span class="tl">${term("hp", "Хиты")}</span><div class="hp-num"><b id="hpCur"></b><small>/ ${CH.hp.max}</small><span class="temp" id="hpTemp" hidden></span></div></div>
+          <div><span class="tl">${term("hp", "Хиты")}</span><div class="hp-num"><b id="hpCur"></b><small>/ ${CH.hp.max}</small></div></div>
           <div class="hp-btns">
             <button type="button" class="round" data-act="hp-" aria-label="Отнять хит">−</button>
             <button type="button" class="round" data-act="hp+" aria-label="Добавить хит">+</button>
           </div>
         </div>
         ${bar}
-        <div class="hp-tools">
-          <button type="button" class="btn neutral" data-act="hpInput" data-mode="dmg" aria-haspopup="dialog">Урон числом</button>
-          <button type="button" class="btn neutral" data-act="hpInput" data-mode="heal" aria-haspopup="dialog">Лечение</button>
-        </div>
         <div class="down" id="down" hidden></div>
       </div>
       <div class="conds" id="conds"></div>
@@ -658,6 +669,7 @@ function panelCombat(){
         <div class="tile card"><span class="tl">${term("ac", "Класс доспеха")}</span><span class="tv">${CH.ac.value}</span><span class="ts">Врагу нужно ${CH.ac.value} или больше, чтобы попасть</span></div>
         <div class="tile card"><span class="tl">${term("initiative", "Инициатива")}</span><span class="tv">${sg(initB())}</span><span class="ts">В начале боя брось к20 и прибавь</span></div>
       </div>
+      ${magicBlock()}
     </section>
     <div class="sec-h turn-h"><h2>Твой ход</h2><p>Тапни «Действие» или «Бонусное» и выбери, что делаешь. Выбранное гаснет до нового хода.</p></div>
     <div class="turnbar">
@@ -674,38 +686,26 @@ function panelCombat(){
         </button>
       </div>
     </div>
-    ${["action", "bonus", "reaction", "movement", "passive"].map(k => group(k, cf.filter(f => f.kind === k))).join("")}
+    ${["action", "bonus", "reaction", "movement", "passive", "long"].map(k => group(k, cf.filter(f => f.kind === k), (CH.spells || []).filter(sp => sp.kind === k))).join("")}
     ${savesSec(true)}
   </section>`;
 }
 
-function panelMagic(){
-  if (!hasMagic()) return "";
-  const sc = SC(), list = CH.spells || [];
+/* Магия внутри боевки: атака заклинанием, сложность и ячейки */
+function magicBlock(){
+  const sc = SC();
+  if (!sc) return "";
   const ABN = { str: "Силу", dex: "Ловкость", con: "Телосложение", int: "Интеллект", wis: "Мудрость", cha: "Харизму" };
-  const tiles = sc ? `<div class="stats2">
+  const levels = slotLevels();
+  return `<div class="stats2">
       <div class="tile card"><span class="tl">${term("spell-attack", "Атака заклинанием")}</span><span class="tv">${sg(sc.attack)}</span><span class="ts">Прибавляй к к20, когда заклинание просит попасть</span></div>
       <div class="tile card"><span class="tl">${term("spell-dc", "Сложность спасброска")}</span><span class="tv">${sc.dc}</span><span class="ts">Враг спасается, если выбросит ${sc.dc} или больше</span></div>
     </div>
-    <p class="meta">Колдуешь через ${ABN[sc.ability] || "характеристику"}.${sc.prepared ? " После длинного отдыха можно сменить подготовленные заклинания: договорись с мастером." : ""}</p>` : "";
-  const levels = slotLevels();
-  const slots = levels.length ? `<section class="sec">
-      <div class="sec-h"><h2>${term("spell-slot", "Ячейки заклинаний")}</h2><p>Заговоры бесплатны. Остальное тратит ячейку своего круга или выше. Вернутся после ${sc.recharge === "short" ? term("short-rest", "короткого отдыха") : term("long-rest", "длинного отдыха")}.</p></div>
-      <div class="card slots">${levels.map(l => `<div class="slot-row" id="sl-${l}"></div>`).join("")}</div>
-    </section>` : "";
-  const groups = [0, 1, 2, 3].map(l => {
-    const ls = list.filter(sp => sp.level === l);
-    if (!ls.length) return "";
-    return `<section class="sec">
-      <div class="sec-h"><h2>${l === 0 ? term("cantrip", "Заговоры") : `${l} круг`}</h2><p>${l === 0 ? "Сколько угодно раз, ячейки не нужны." : `Тратит ячейку ${l} круга или выше.`}</p></div>
-      ${ls.map(spellCard).join("")}
-    </section>`;
-  }).join("");
-  return `<section class="panel" id="p-magic" role="tabpanel" aria-labelledby="t-magic">
-    ${sc ? `<section class="sec">${tiles}</section>` : ""}
-    ${slots}
-    ${groups}
-  </section>`;
+    ${levels.length ? `<div class="card slots">
+      <p class="slots-h">${term("spell-slot", "Ячейки заклинаний")} <span>вернутся после ${sc.recharge === "short" ? "короткого" : "длинного"} отдыха</span></p>
+      ${levels.map(l => `<div class="slot-row" id="sl-${l}"></div>`).join("")}
+    </div>` : ""}
+    <p class="meta">Колдуешь через ${ABN[sc.ability] || "характеристику"}. Заклинания лежат в секциях хода ниже: листай ленты вбок.${sc.prepared ? " После длинного отдыха можно сменить подготовленные — договорись с мастером." : ""}</p>`;
 }
 
 function panelGear(){
@@ -793,16 +793,15 @@ function render(){
       <button type="button" class="qbtn" data-act="long" aria-haspopup="dialog">Длинный отдых</button>
       <button type="button" class="qbtn" id="inspBtn" data-act="insp" aria-pressed="false"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3.5l2.6 5.3 5.9.9-4.3 4.1 1 5.8-5.2-2.7-5.2 2.7 1-5.8-4.3-4.1 5.9-.9z"/></svg>Вдохновение</button>
     </div>
-    <div class="tabs${hasMagic() ? " t4" : ""}" role="tablist" aria-label="Разделы чарника" style="--tabs:${hasMagic() ? 4 : 3}">
+    <div class="tabs" role="tablist" aria-label="Разделы чарника">
       <button type="button" class="tab" role="tab" id="t-stats" data-tab="stats" aria-controls="p-stats" aria-selected="true" aria-label="Характеристики"><svg class="i" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="8" r="3.6"/><path d="M5 20.2c.9-3.6 3.7-5.6 7-5.6s6.1 2 7 5.6"/></svg><span class="long">Характеристики</span><span class="short" aria-hidden="true">Статы</span></button>
       <button type="button" class="tab" role="tab" id="t-combat" data-tab="combat" aria-controls="p-combat" aria-selected="false"><svg class="i" viewBox="0 0 24 24" aria-hidden="true"><path d="M20 4l-.5 4.5-9 9-4-4 9-9z"/><path d="M5 12.5l6.5 6.5"/><path d="M8 16 4 20"/></svg><span>Боевка</span></button>
-      ${hasMagic() ? `<button type="button" class="tab" role="tab" id="t-magic" data-tab="magic" aria-controls="p-magic" aria-selected="false"><svg class="i" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3.5l1.9 4.6 4.6 1.9-4.6 1.9L12 16.5l-1.9-4.6L5.5 10l4.6-1.9z"/><path d="M18.5 15.5l.8 1.9 1.9.8-1.9.8-.8 1.9-.8-1.9-1.9-.8 1.9-.8z"/></svg><span>Магия</span></button>` : ""}
       <button type="button" class="tab" role="tab" id="t-gear" data-tab="gear" aria-controls="p-gear" aria-selected="false"><svg class="i" viewBox="0 0 24 24" aria-hidden="true"><path d="M8.5 7V5.5A2.5 2.5 0 0 1 11 3h2a2.5 2.5 0 0 1 2.5 2.5V7"/><rect x="4.5" y="7" width="15" height="14" rx="4.5"/><path d="M9 13h6v4H9z"/></svg><span>Снаряга</span></button>
     </div>
   </header>
   ${offlineNote ? `<p class="offline">Нет связи с сервером: открыта копия, сохранённая на этом устройстве.</p>` : ""}
   ${hello()}
-  <div id="panels">${panelStats()}${panelCombat()}${panelMagic()}${panelGear()}</div>
+  <div id="panels">${panelStats()}${panelCombat()}${panelGear()}</div>
   <footer class="foot">
     <p>Правила D&amp;D 5e (2014). Часть материалов взята из System Reference Document 5.1 © Wizards of the Coast LLC, лицензия CC-BY-4.0. Описания пересказаны простыми словами.</p>
     <p>Хиты и потраченные способности запоминаются в этом браузере.</p>
@@ -820,8 +819,6 @@ function refresh(){
 
   const fill = $("#hpFill");
   if (fill){ fill.style.width = `${(S.hp / CH.hp.max) * 100}%`; $("#hpBar").setAttribute("aria-valuenow", S.hp); }
-  const tEl = $("#hpTemp");
-  if (tEl){ tEl.hidden = !(S.temp > 0); tEl.textContent = `+${S.temp} врем.`; }
 
   const down = $("#down");
   if (S.hp === 0){
@@ -847,14 +844,17 @@ function refresh(){
     down.hidden = true;
   }
 
-  // Состояния и концентрация
+  // Концентрация: какое заклинание сейчас держишь
   const conds = $("#conds");
   if (conds){
-    const list = (KB.conditions || []).filter(c => (S.conds || []).includes(c.id));
-    conds.innerHTML = (S.conc ? `<div class="cond conc"><div><b>${term("concentration", "Концентрация")}: ${esc(S.conc.name)}</b><p>Получишь урон — спасбросок Телосложения. Новое заклинание с концентрацией сбросит это.</p></div><button type="button" class="x" data-act="concOff" aria-label="Сбросить концентрацию">×</button></div>` : "")
-      + list.map(c => `<div class="cond"><div><b>${esc(c.name)}</b><p>${esc(c.short)}</p></div><button type="button" class="x" data-act="condOff" data-id="${c.id}" aria-label="Снять: ${esc(c.name)}">×</button></div>`).join("")
-      + `<button type="button" class="addcond" data-act="conds" aria-haspopup="dialog">+ Состояние</button>`;
+    conds.innerHTML = S.conc ? `<div class="cond conc"><div><b>${term("concentration", "Концентрация")}: ${esc(S.conc.name)}</b><p>Получишь урон — спасбросок Телосложения. Новое заклинание с концентрацией сбросит это.</p></div><button type="button" class="x" data-act="concOff" aria-label="Сбросить концентрацию">×</button></div>` : "";
+    conds.hidden = !S.conc;
   }
+  // Сколько ячеек хватит на заклинания каждого круга (годится и ячейка выше)
+  $$(".slh").forEach(el => {
+    const l = +el.dataset.l, n = slotLevels().filter(k => k >= l).reduce((a, k) => a + slotLeft(k), 0);
+    el.textContent = n ? `ячеек хватит на ${n}` : "ячейки кончились";
+  });
   const ib = $("#inspBtn");
   if (ib) ib.setAttribute("aria-pressed", String(!!S.insp));
 
@@ -905,7 +905,7 @@ function refresh(){
   themeIcon();
   if (drawerMode && drawerMode.startsWith("rest-") && $("#drawer").open) renderRest(drawerMode.slice(5));
   if (drawerMode && drawerMode.startsWith("slot-") && $("#drawer").open) renderSlot(drawerMode.slice(5));
-  if (drawerMode === "conds" && $("#drawer").open) renderConds();
+
   save();
 }
 
@@ -922,9 +922,10 @@ function themeIcon(){
 try { matchMedia("(prefers-color-scheme: dark)").addEventListener("change", themeIcon); } catch (e) {}
 
 /* ---------- вкладки ---------- */
-const TABS = ["stats", "combat", "magic", "gear"];
+const TABS = ["stats", "combat", "gear"];
 function setTab(id, scroll){
-  if (!TABS.includes(id) || (id === "magic" && !hasMagic())) id = "stats";
+  if (id === "magic") id = "combat";
+  if (!TABS.includes(id)) id = "stats";
   $$(".panel").forEach(p => { p.hidden = p.id !== "p-" + id; });
   $$(".tab").forEach(t => t.setAttribute("aria-selected", String(t.dataset.tab === id)));
   try { localStorage.setItem(TAB_KEY, id); } catch (e) {}
@@ -996,26 +997,6 @@ function renderRest(kind){
   html += `<button type="button" class="btn wide primary" data-act="${isS ? "restShort" : "restLong"}">${isS ? "Отдохнуть часок" : "Переночевать"}</button>`;
   $("#drBody").innerHTML = html;
 }
-/* Урон или лечение числом: удобно, когда хитов много */
-function renderHpInput(mode){
-  $("#drTitle").textContent = mode === "heal" ? "Лечение" : "Урон";
-  $("#drBody").innerHTML = `
-    <p class="meta">${mode === "heal" ? "Сколько хитов вернулось? Временные хиты не складываются: остаётся большее." : "Сколько урона пришло? Сначала он снимает временные хиты."}</p>
-    <input class="num-in" id="hpAmt" type="number" inputmode="numeric" min="1" max="999" placeholder="0" aria-label="Число">
-    <div class="quicknums">${[1, 2, 3, 5, 8, 10].map(n => `<button type="button" data-act="hpAdd" data-v="${n}">+${n}</button>`).join("")}</div>
-    <div class="dr-acts">
-      ${mode === "heal"
-        ? `<button type="button" class="btn primary" data-act="hpApply" data-mode="heal">Вернуть хиты</button><button type="button" class="btn neutral" data-act="hpApply" data-mode="temp">Временные хиты</button>`
-        : `<button type="button" class="btn danger" data-act="hpApply" data-mode="dmg">Получить урон</button>`}
-    </div>`;
-  setTimeout(() => { const i = $("#hpAmt"); if (i) i.focus(); }, 50);
-}
-function renderConds(){
-  $("#drTitle").textContent = "Состояния";
-  $("#drBody").innerHTML = `<p class="meta">Мастер говорит «ты отравлен» или «ты лежишь» — отметь здесь, и лист напомнит, что это значит.</p>
-    <div class="opts">${(KB.conditions || []).map(c => `<button type="button" class="cond-opt" data-act="condToggle" data-id="${c.id}" aria-pressed="${(S.conds || []).includes(c.id)}"><b>${esc(c.name)}</b><span>${esc(c.text)}</span></button>`).join("")}</div>`;
-}
-
 /* Подсказка после заклинания: что бросать */
 function spellToast(sp, l){
   const parts = [sp.name + (l ? ` (ячейка ${l} круга)` : "")];
@@ -1095,17 +1076,6 @@ const H = {
     const x = e && typeof e.clientX === "number" ? e.clientX : r.right;
     setHP(Math.round(Math.max(0, Math.min(1, (x - r.left) / r.width)) * CH.hp.max));
   },
-  hpInput: b => { drawerMode = "hp"; renderHpInput(b.dataset.mode); openDrawer(); },
-  hpAdd: b => { const i = $("#hpAmt"); if (i) i.value = (parseInt(i.value, 10) || 0) + +b.dataset.v; },
-  hpApply: b => {
-    const n = parseInt(($("#hpAmt") || {}).value, 10) || 0;
-    if (n <= 0){ toast("Впиши число."); return; }
-    const m = b.dataset.mode;
-    if (m === "dmg") takeDamage(n);
-    else if (m === "heal"){ setHP(S.hp + n); toast(`+${n} хитов. Теперь ${S.hp} из ${CH.hp.max}.`); }
-    else { S.temp = Math.max(S.temp || 0, n); toast(`Временные хиты: ${S.temp}. Урон сначала снимает их.`); }
-    drawer.close();
-  },
   death: b => {
     const d = S.death || (S.death = { s: 0, f: 0 }), v = b.dataset.v;
     if (v === "s") d.s = Math.min(3, d.s + 1);
@@ -1113,9 +1083,6 @@ const H = {
     else if (v === "20"){ setHP(1); toast("Двадцать! Ты приходишь в себя с 1 хитом."); }
     else S.death = { s: 0, f: 0 };
   },
-  conds: () => { drawerMode = "conds"; renderConds(); openDrawer(); drawer.scrollTop = 0; },
-  condToggle: b => { const id = b.dataset.id, c = S.conds || (S.conds = []); const i = c.indexOf(id); if (i >= 0) c.splice(i, 1); else c.push(id); },
-  condOff: b => { S.conds = (S.conds || []).filter(x => x !== b.dataset.id); },
   concOff: () => { if (S.conc) toast(`Концентрация на «${S.conc.name}» сброшена.`); S.conc = null; },
   insp: () => {
     S.insp = !S.insp;
@@ -1292,10 +1259,7 @@ window.addEventListener("afterprint", () => {
 document.addEventListener("input", e => {
   if (e.target.id === "notes" && S){ S.notes = e.target.value; save(); }
 });
-document.addEventListener("keydown", e => {
-  // preventDefault: иначе Enter «нажмёт» кнопку, на которую вернётся фокус, и шторка откроется снова
-  if (e.key === "Enter" && e.target.id === "hpAmt"){ e.preventDefault(); const b = $("#drBody [data-act='hpApply']"); if (b) b.click(); }
-});
+
 
 /* ---------- запуск: откуда брать персонажа ---------- */
 const getJSON = url => fetch(url).then(r => { if (!r.ok) throw new Error(r.status + " " + url); return r.json(); });
