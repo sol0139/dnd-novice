@@ -92,10 +92,13 @@ function parts(rules, ch){
   const kit = byId(cls.kits, ch.kit) || cls.kits[0];
   const bg = byId(rules.backgrounds, ch.background) || rules.backgrounds[0];
   const lvl = Math.max(1, Math.min(4, +ch.level || 1));
-  const subcl = cls.subclass && lvl >= cls.subclass.level ? cls.subclass : null;
-  const needColor = !!(race.colors || (cls.subclass && cls.subclass.colors && subcl));
+  // Подкласс выбирают заранее, а работать он начинает со своего уровня
+  const scList = cls.subclasses || [];
+  const scPick = byId(scList, ch.subclass) || scList[0] || null;
+  const subcl = scPick && lvl >= scPick.level ? scPick : null;
+  const needColor = !!(race.colors || (subcl && subcl.colors));
   const color = needColor ? (rules.dragonColors.find(c => c.id === ch.color) || rules.dragonColors[7]) : null;
-  return { race, sub, cls, kit, bg, lvl, subcl, color };
+  return { race, sub, cls, kit, bg, lvl, scPick, subcl, color };
 }
 const abilityOrder = (P) => P.kit.order || P.cls.order;
 
@@ -116,7 +119,9 @@ export function casterInfo(rules, spellsData, ch, abilities){
   if (P.subcl && P.subcl.spells) for (const [l, ids] of Object.entries(P.subcl.spells)) if (P.lvl >= +l) always.push(...ids);
   if (P.cls.id === "warlock" && P.lvl >= 3) always.push("find-familiar");
   const lists = spellsData.classes[P.cls.id] || {};
-  const pool = lvlKey => uniq([...(lists[lvlKey] || []), ...((P.subcl && P.subcl.extraSpells && P.subcl.extraSpells[lvlKey]) || [])])
+  // Божественная душа берёт ещё и из списка жреца
+  const other = P.subcl && P.subcl.extraFrom ? (spellsData.classes[P.subcl.extraFrom] || {}) : {};
+  const pool = lvlKey => uniq([...(lists[lvlKey] || []), ...((P.subcl && P.subcl.extraSpells && P.subcl.extraSpells[lvlKey]) || []), ...(other[lvlKey] || [])])
     .filter(id => !always.includes(id));
   const leveled = [];
   for (let l = 1; l <= maxLevel; l++) leveled.push(...pool(String(l)));
@@ -168,14 +173,17 @@ export function skillInfo(rules, ch){
   const P = parts(rules, ch);
   const bgSkills = P.bg.skills;
   const raceSkills = P.race.skills || [];
-  const fixed = uniq([...bgSkills, ...raceSkills]);
+  const base = uniq([...bgSkills, ...raceSkills]);
   // если предыстория и раса дали один и тот же навык, можно взять любой другой взамен
-  const replace = bgSkills.length + raceSkills.length - fixed.length;
+  const replace = bgSkills.length + raceSkills.length - base.length;
+  // навык, который подкласс даёт сразу (Пьяный мастер — Выступление)
+  const fixed = uniq([...base, ...((P.subcl && P.subcl.addSkills) || [])]);
   const from = P.cls.skills.from === "any" ? ALL_SKILLS : P.cls.skills.from;
   return {
     fixed, from, choose: P.cls.skills.choose,
     raceChoose: (P.race.skillChoice || 0) + replace,
     bonusChoose: P.subcl && P.subcl.bonusSkills ? P.subcl.bonusSkills : 0,
+    bonusFrom: (P.subcl && P.subcl.bonusSkillsFrom) || ALL_SKILLS,
     expertise: P.cls.expertise && P.lvl >= P.cls.expertise.level ? P.cls.expertise.count : 0
   };
 }
@@ -190,6 +198,7 @@ export function normalize(rules, spellsData, input, rnd = Math.random){
   let P = parts(rules, ch);
   ch.subrace = P.sub ? P.sub.id : null;
   ch.kit = P.kit.id;
+  ch.subclass = P.scPick ? P.scPick.id : null;
   ch.background = P.bg.id;
   if (P.color) ch.color = P.color.id;
   P = parts(rules, ch);
@@ -228,7 +237,7 @@ export function normalize(rules, spellsData, input, rnd = Math.random){
   };
   ch.skills = take(si.from, si.fixed, si.choose, ch.skills, on("skills"));
   ch.raceSkills = si.raceChoose ? take(ALL_SKILLS, [...si.fixed, ...ch.skills], si.raceChoose, ch.raceSkills, on("skills")) : [];
-  ch.bonusSkills = si.bonusChoose ? take(ALL_SKILLS, [...si.fixed, ...ch.skills, ...ch.raceSkills], si.bonusChoose, ch.bonusSkills, on("skills")) : [];
+  ch.bonusSkills = si.bonusChoose ? take(si.bonusFrom, [...si.fixed, ...ch.skills, ...ch.raceSkills], si.bonusChoose, ch.bonusSkills, on("skills")) : [];
   const prof = uniq([...si.fixed, ...ch.skills, ...ch.raceSkills, ...ch.bonusSkills]);
   if (si.expertise){
     const pref = uniq([...(P.cls.expertise.prefer || []), ...(P.cls.skillOrder || []), ...prio]);
@@ -298,7 +307,7 @@ export function randomChoices(rules, spellsData, opts = {}, rnd = Math.random){
   return normalize(rules, spellsData, {
     race, subrace: r.subraces ? pickRand(r.subraces, rnd).id : null,
     color: pickRand(rules.dragonColors, rnd).id,
-    class: cls, kit: pickRand(c.kits, rnd).id, level: opts.level || 1,
+    class: cls, kit: pickRand(c.kits, rnd).id, subclass: pickRand(c.subclasses, rnd).id, level: opts.level || 1,
     background: pickRand(bgs, rnd), pronoun,
     enemy: pickRand(rules.enemies, rnd), terrain: pickRand(rules.terrains, rnd),
     name: randomName(rules, race, pronoun, rnd), pitch: pickRand(rules.pitch[cls], rnd)
@@ -338,7 +347,7 @@ export function buildCharacter(rules, spellsData, input){
 
   /* --- владения --- */
   const armorProf = new Set([...cls.armor, ...((subcl && subcl.armor) || []), ...((sub && sub.armor) || [])]);
-  const weaponProf = new Set([...cls.weapons, ...(race.weapons || []), ...((sub && sub.weapons) || [])]);
+  const weaponProf = new Set([...cls.weapons, ...(race.weapons || []), ...((sub && sub.weapons) || []), ...((subcl && subcl.weapons) || [])]);
   const profWith = w => weaponProf.has(rules.weapons[w].cat) || weaponProf.has(w);
 
   /* --- снаряжение из набора --- */
@@ -366,7 +375,7 @@ export function buildCharacter(rules, spellsData, input){
   equipment.push({ name: "Кошель", note: `${bg.gold} [[gold|зм]].` });
 
   /* --- КД --- */
-  const style = cls.styleLevel && lvl >= cls.styleLevel ? kit.style : null;
+  const style = (subcl && subcl.style) || (cls.styleLevel && lvl >= cls.styleLevel ? kit.style : null);
   let ac, why;
   const dexPart = bodyArmor ? (bodyArmor.kind === "light" ? M.dex : bodyArmor.kind === "medium" ? Math.min(2, M.dex) : 0) : M.dex;
   if (bodyArmor){
@@ -379,6 +388,7 @@ export function buildCharacter(rules, spellsData, input){
     ac = subcl.unarmoredBase + M.dex; why = `Драконья чешуя ${subcl.unarmoredBase}, Ловкость ${sg(M.dex)}`;
   } else { ac = 10 + M.dex; why = `Без доспеха: 10, Ловкость ${sg(M.dex)}`; }
   if (shield && !(cls.unarmored && cls.unarmored[0] === "wis")){ ac += 2; why += ", щит +2"; }
+  if (subcl && subcl.acBonus && bodyArmor){ ac += subcl.acBonus; why += `, ${subcl.acBonusName || subcl.name} +${subcl.acBonus}`; }
   const knowsMageArmor = (ch.spells || []).includes("mage-armor");
   if (!bodyArmor && knowsMageArmor && 13 + M.dex > ac) why += `. С Доспехами мага будет ${13 + M.dex + (shield ? 2 : 0)}`;
 
@@ -401,10 +411,13 @@ export function buildCharacter(rules, spellsData, input){
   /* --- атаки --- */
   const features = [];
   const isMonkWeapon = w => cls.martialArts && (w === "shortsword" || (rules.weapons[w].cat === "simple" && !rules.weapons[w].ranged && !rules.weapons[w].twoHanded && !rules.weapons[w].heavy));
+  // Ведьмин клинок бьёт через Харизму одним оружием — первым не двуручным из набора
+  const hexWeapon = subcl && subcl.chaWeapons ? (kit.attacks.map(a => a.w).find(w => !rules.weapons[w].twoHanded) || null) : null;
   const attackFor = (wid, mode) => {
     const w = rules.weapons[wid];
     const ranged = !!w.ranged || mode === "throw";
     let a = w.ranged ? "dex" : w.finesse || isMonkWeapon(wid) ? (M.dex >= M.str ? "dex" : "str") : "str";
+    if (wid === hexWeapon && M.cha > M[a]) a = "cha";
     const prof = profWith(wid);
     let toHit = M[a] + (prof ? pb : 0), dmgMod = M[a];
     const whyHit = [`${rules.abilityNames[a]} ${sg(M[a])}`]; if (prof) whyHit.push(`[[proficiency|мастерство]] +${pb}`);
@@ -475,9 +488,16 @@ export function buildCharacter(rules, spellsData, input){
       out.save = { ab: color.save, dc: 8 + pb + M.con };
       out.dmg = { dice: "2d6", type: color.dmg, half: true };
     }
+    if (f.dmg) out.dmg = { ...f.dmg };
+    if (f.attackSpec){
+      const s = f.attackSpec, a = s.ab;
+      out.attack = { toHit: M[a] + pb, damage: withMod(s.die, M[a]), damageType: s.type, melee: false, ...(s.range ? { range: s.range } : {}) };
+      out.why = `Попадание: ${rules.abilityNames[a]} ${sg(M[a])}, [[proficiency|мастерство]] +${pb}. Урон: ${rules.abilityNames[a]} ${sg(M[a])}.`;
+    }
     if (f.attackRef === "main" && mainMelee) out.attackRef = mainMelee;
     else if (f.attackRef === "unarmed") out.attackRef = "unarmed";
     else if (f.attackRef === "main") return null;
+    else if (f.attackRef && features.some(x => x.id === f.attackRef)) out.attackRef = f.attackRef;
     return out;
   };
   const clsName = cls.name.toLowerCase();
@@ -531,7 +551,10 @@ export function buildCharacter(rules, spellsData, input){
   /* --- языки --- */
   const enemyLang = cls.id === "ranger" && rules.enemyLang ? rules.enemyLang[ch.enemy] : null;
   const languages = uniq([...race.languages, ...ch.languages, ...(subcl && subcl.colors ? ["Драконий"] : []), ...(enemyLang ? [enemyLang] : [])]);
-  const tools = [cls.tools, bg.tools].filter(Boolean).join("; ");
+  const tools = [cls.tools, bg.tools, subcl && subcl.tools].filter(Boolean).join("; ");
+  // Сумрачный охотник, Удалец, Боевая магия прибавляют к инициативе ещё одну характеристику
+  const halfP = cls.halfProf && lvl >= cls.halfProf ? Math.floor(pb / 2) : 0;
+  const initiative = subcl && subcl.initBonus ? M.dex + halfP + M[subcl.initBonus] : null;
 
   const character = {
     format: "novice-sheet/0.3", edition: "5e-2014",
@@ -542,7 +565,7 @@ export function buildCharacter(rules, spellsData, input){
     background: { id: bg.id, name: bg.name },
     abilities, proficiencyBonus: pb,
     hp: { max: hp }, hitDice: { die: `1d${cls.hitDie}`, count: lvl },
-    ac: { value: ac, why }, speed,
+    ac: { value: ac, why }, speed, ...(initiative != null ? { initiative } : {}),
     saves: [...cls.saves], skills, expertise: [...ch.expertise],
     ...(cls.halfProf && lvl >= cls.halfProf ? { halfProf: true } : {}),
     languages, ...(tools ? { tools } : {}), features, equipment,
@@ -599,7 +622,7 @@ export function makeSpell(spellsData, id, { m = 0, pb = 2, she = false, agonizin
 
 // В базу вместе с листом кладём выбор мастера: так персонажа можно открыть в конструкторе и поправить
 function compactChoices(ch){
-  const keep = ["name", "pronoun", "pitch", "race", "subrace", "color", "class", "kit", "level", "background", "base", "baseAuto", "auto",
+  const keep = ["name", "pronoun", "pitch", "race", "subrace", "color", "class", "subclass", "kit", "level", "background", "base", "baseAuto", "auto",
     "asiFree", "asi4", "skills", "raceSkills", "bonusSkills", "expertise", "cantrips", "spells", "raceCantrip", "languages", "enemy", "terrain"];
   const out = {};
   for (const k of keep) if (ch[k] != null && !(Array.isArray(ch[k]) && !ch[k].length)) out[k] = ch[k];

@@ -25,6 +25,8 @@ const sg = n => (n < 0 ? "−" : "+") + Math.abs(n);
 const mod = s => Math.floor((s - 10) / 2);
 const dice = f => String(f || "").replace(/(\d*)d(\d+)/g, (_, n, s) => `${n === "1" || !n ? "" : n}к${s}`).replace(/-/g, "−");
 const byId = (l, id) => l.find(x => x.id === id);
+// Насколько подкласс просит внимания игрока
+const EASE = { auto: "всё само", button: "одна кнопка", track: "надо следить" };
 
 /* ---------- кусочки ---------- */
 const pk = (act, val, label, on, extra = "") =>
@@ -72,7 +74,8 @@ export function viewBuild(ctx){
   CR.preview = c;
   const race = byId(R.races, d.race), cls = byId(R.classes, d.class), bg = byId(R.backgrounds, d.background);
   const sub = race.subraces ? byId(race.subraces, d.subrace) : null;
-  const needColor = race.colors || (cls.subclass && cls.subclass.colors && d.level >= cls.subclass.level);
+  const scPick = byId(cls.subclasses, d.subclass) || cls.subclasses[0];
+  const needColor = race.colors || (scPick.colors && d.level >= scPick.level);
   const ab = finalAbilities(R, d), bon = abilityBonuses(R, d);
   const si = skillInfo(R, d);
   const ci = casterInfo(R, SPL, d, ab);
@@ -97,8 +100,11 @@ export function viewBuild(ctx){
 
   /* --- класс, уровень, снаряжение --- */
   const classBody = `<div class="pick">${R.classes.map(k => pk("crClass", k.id, esc(k.name), k.id === d.class)).join("")}</div>
-    <p class="meta">${esc(cls.about || "")}${cls.subclass ? ` Подкласс: ${esc(cls.subclass.name.toLowerCase())}, с ${cls.subclass.level} уровня.` : ""}</p>
+    <p class="meta">${esc(cls.about || "")}</p>
     <div class="seg" role="group" aria-label="Уровень"><span class="seg-l">Уровень</span>${[1, 2, 3, 4].map(l => pk("crLevel", l, String(l), l === d.level)).join("")}</div>
+    <div class="pick-h"><b>Подкласс</b><span class="src">${d.level >= scPick.level ? "уже работает" : `заработает с ${scPick.level} уровня`}</span></div>
+    <div class="scs">${cls.subclasses.map(sc => `<button type="button" class="sc" data-act="crSubclass" data-v="${sc.id}" aria-pressed="${sc.id === scPick.id}">
+      <span class="sc-h"><b>${esc(sc.name)}</b><i class="ease ${sc.ease}">${EASE[sc.ease] || ""}</i></span><span class="sc-p">${esc(sc.pitch || "")}</span></button>`).join("")}</div>
     <div class="pick sub"><span class="seg-l">Снаряжение</span>${cls.kits.map(k => pk("crKit", k.id, esc(k.name), k.id === d.kit)).join("")}</div>
     ${cls.id === "ranger" ? `<div class="pick sub"><span class="seg-l">Добыча</span>${R.enemies.map(e => pk("crEnemy", e, esc(e), e === d.enemy)).join("")}</div>
       <div class="pick sub"><span class="seg-l">Местность</span>${R.terrains.map(e => pk("crTerrain", e, esc(e), e === d.terrain)).join("")}</div>` : ""}`;
@@ -147,7 +153,7 @@ export function viewBuild(ctx){
   if (si.raceChoose) skillBody += `<div class="pick-h"><b>${race.skillChoice ? `От расы (${esc(race.name.toLowerCase())})` : "Взамен совпавшего"}</b>${counter(d.raceSkills.length, si.raceChoose)}</div>
     <div class="pick">${skillChips(Object.keys(SKILL_NAMES), d.raceSkills, "crRaceSkill", si.raceChoose)}</div>`;
   if (si.bonusChoose) skillBody += `<div class="pick-h"><b>От подкласса</b>${counter(d.bonusSkills.length, si.bonusChoose)}</div>
-    <div class="pick">${skillChips(Object.keys(SKILL_NAMES), d.bonusSkills, "crBonusSkill", si.bonusChoose)}</div>`;
+    <div class="pick">${skillChips(si.bonusFrom, d.bonusSkills, "crBonusSkill", si.bonusChoose)}</div>`;
   if (si.expertise) skillBody += `<div class="pick-h"><b>Компетентность: мастерство вдвойне</b>${counter(d.expertise.length, si.expertise)}</div>
     <div class="pick">${[...prof].map(s => pk("crExpert", s, SKILL_NAMES[s], d.expertise.includes(s))).join("")}</div>`;
 
@@ -190,7 +196,7 @@ export function viewBuild(ctx){
     <div class="sum-h"><h3>${esc(c.name)}</h3><span class="src">${esc(c.race.name)} · ${esc(c.class.name)} ${c.class.level}</span></div>
     <div class="sum-tiles">
       <span><small>КД</small><b>${c.ac.value}</b></span><span><small>Хиты</small><b>${c.hp.max}</b></span>
-      <span><small>Инициатива</small><b>${sg(mod(c.abilities.dex) + (c.halfProf ? 1 : 0))}</b></span><span><small>Скорость</small><b>${c.speed / 5} <small>кл.</small></b></span>
+      <span><small>Инициатива</small><b>${sg(c.initiative ?? mod(c.abilities.dex) + (c.halfProf ? 1 : 0))}</b></span><span><small>Скорость</small><b>${c.speed / 5} <small>кл.</small></b></span>
     </div>
     <p class="meta">${esc(c.ac.why)}.</p>
     ${attacks.length ? `<ul class="sum-list">${attacks.map(f => `<li><span>${esc(f.name)}</span><b>${sg(f.attack.toHit)} · ${dice(f.attack.damage)}</b></li>`).join("")}</ul>` : ""}
@@ -266,13 +272,14 @@ export function createHandlers(ctx){
     crColor: b => { d().color = b.dataset.v; ctx.render(); },
     crClass: b => {
       if (d().class !== b.dataset.v){
-        d().class = b.dataset.v; d().kit = null; d().asi4 = null; d().cantrips = []; d().spells = []; d().skills = []; d().expertise = [];
+        d().class = b.dataset.v; d().kit = null; d().subclass = null; d().asi4 = null; d().cantrips = []; d().spells = []; d().skills = []; d().expertise = [];
         d().pitch = null; structural();
       }
       ctx.render();
     },
     crLevel: b => { d().level = +b.dataset.v; d().spells = []; structural(); ctx.render(); },
     crKit: b => { d().kit = b.dataset.v; ctx.render(); },
+    crSubclass: b => { if (d().subclass !== b.dataset.v){ d().subclass = b.dataset.v; d().spells = []; d().cantrips = []; d().bonusSkills = []; structural(); } ctx.render(); },
     crEnemy: b => { d().enemy = b.dataset.v; ctx.render(); },
     crTerrain: b => { d().terrain = b.dataset.v; ctx.render(); },
     crBg: b => { d().background = b.dataset.v; structural(); ctx.render(); },
