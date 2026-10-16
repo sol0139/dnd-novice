@@ -269,7 +269,7 @@ export function viewRoom(){
     const acts = TB.confirmSeat === h.id
       ? `<div class="confirm"><p>${r.isMaster && !h.mine ? `Убрать «${esc(h.name)}»? Вернуть героя сможет игрок по коду или ты по его ссылке.` : r.isMaster ? `Убрать «${esc(h.name)}» со стола? Сам герой останется в мастерской.` : `Увести «${esc(h.name)}» из-за стола? Вернуться можно будет по коду мастера.`}</p>
           <div class="char-acts"><button type="button" class="btn danger sm" data-act="tbUnseat" data-id="${h.id}"${TB.busy ? " disabled" : ""}>${r.isMaster ? "Убрать" : "Встать"}</button><button type="button" class="btn neutral sm" data-act="tbUnseatCancel">Отмена</button></div></div>`
-      : `<div class="char-more noprint">${h.slug ? `<a class="linkbtn" href="/c/${esc(h.slug)}">Открыть лист</a>` : ""}${canDrop ? `<button type="button" class="linkbtn muted" data-act="tbUnseatAsk" data-id="${h.id}">${dropLabel}</button>` : ""}</div>`;
+      : `<div class="char-more noprint">${h.slug ? `<a class="linkbtn tb-open" href="/c/${esc(h.slug)}?view=table" target="_blank" rel="noopener" title="Откроется в новой вкладке, стол останется на месте">Открыть лист<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M14 4h6v6M20 4l-9 9M18 14v5a1 1 0 0 1-1 1H5a1 1 0 0 1-1-1V7a1 1 0 0 1 1-1h5"/></svg></a>` : ""}${canDrop ? `<button type="button" class="linkbtn muted" data-act="tbUnseatAsk" data-id="${h.id}">${dropLabel}</button>` : ""}</div>`;
     return `<article class="card tbl-card${absent.has(h.id) ? " away" : ""}">
       <div class="tbl-h"><h3>${esc(h.name)}</h3><span class="src">${esc([h.race, h.cls ? `${h.cls.name} ${h.cls.level}` : ""].filter(Boolean).join(" · "))}</span></div>
       <p class="tb-who${h.mine ? " mine" : ""}">${who}</p>

@@ -761,7 +761,10 @@ function renderDict(){
 
 /* Подсказка при первом входе: три шага, чтобы не потеряться */
 const HELLO_KEY = "novice-sheet:hello";
+// Мастер открыл лист со стола (в отдельной вкладке): подсказка для новичка ему ни к чему
+const FROM_TABLE = new URLSearchParams(location.search).get("view") === "table";
 function hello(){
+  if (FROM_TABLE) return "";
   let seen = false;
   try { seen = !!localStorage.getItem(HELLO_KEY); } catch (e) {}
   if (seen) return "";
