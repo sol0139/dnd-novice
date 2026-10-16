@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <meta name="description" content="Чарник D&D для новичков: способности разложены по ходу, всё объяснено простыми словами.">
-<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='9' fill='%232EB41B'/%3E%3Cpath d='M16 6l8.5 4.9v10.2L16 26l-8.5-4.9V10.9z M16 6l-5 14h10z' fill='none' stroke='white' stroke-width='1.8' stroke-linejoin='round'/%3E%3C/svg%3E">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='9' fill='%232EB41B'/%3E%3Cpath transform='translate%287.4 6.8%29 scale%281.15%29' fill='white' d='M3.33594 6.72062L0.0375 11.5922C-0.05875 11.7484 0.040625 11.9516 0.222813 11.9716L6.73094 12.6613L3.33594 6.72062ZM0.231562 9.85719L2.58437 6.03375L0.189375 4.59688C0.105937 4.54688 0 4.60687 0 4.70406V9.79187C0 9.91781 0.165312 9.96469 0.231562 9.85719ZM0.570312 13.2375L6.64531 15.9769C6.81094 16.0534 7 15.9322 7 15.75V13.6978L0.639063 13.0009C0.5 12.9853 0.444375 13.1756 0.570312 13.2375ZM3.10844 5.18188L5.60625 0.715C5.74187 0.494375 5.49406 0.238437 5.26937 0.366875L0.556562 3.44844C0.479375 3.49906 0.481875 3.61281 0.560625 3.66031L3.10844 5.18188ZM7.5 5.5H10.9128L7.92594 0.238125C7.82813 0.079375 7.66406 0 7.5 0C7.33594 0 7.17187 0.079375 7.07406 0.238125L4.08719 5.5H7.5ZM14.8106 4.59688L12.4156 6.03406L14.7684 9.8575C14.8344 9.965 15 9.91812 15 9.79187V4.70406C15 4.60687 14.8941 4.54688 14.8106 4.59688ZM11.8916 5.18188L14.4394 3.66C14.5184 3.6125 14.5206 3.49875 14.4434 3.44812L9.73063 0.366875C9.50594 0.238437 9.25813 0.494375 9.39375 0.715L11.8916 5.18188ZM14.3609 13.0009L8 13.6975V15.7497C8 15.9322 8.18906 16.0531 8.35469 15.9766L14.4297 13.2372C14.5556 13.1756 14.5 12.9853 14.3609 13.0009ZM11.6641 6.72062L8.26937 12.6613L14.7775 11.9716C14.9597 11.9512 15.0591 11.7484 14.9628 11.5922L11.6641 6.72062ZM7.5 6.5H4.36156L7.5 11.9922L10.6384 6.5H7.5Z'/%3E%3C/svg%3E">
 <link rel="apple-touch-icon" href="/icons/apple-touch-icon.png">
 <link rel="manifest" href="/manifest.webmanifest">
 <meta name="theme-color" content="#2EB41B">
@@ -41,7 +41,7 @@
 .eyebrow{font-size:14px;font-weight:500;color:var(--fg-3)}
 /* Логотип в шапке листа: дорога на главную, даже если у браузера нет кнопки «назад» */
 .home{flex:none;width:44px;height:44px;border-radius:14px;background:var(--accent);color:#fff;display:grid;place-items:center;text-decoration:none}
-.home svg{width:24px;height:24px;fill:none;stroke:currentColor;stroke-width:1.8;stroke-linejoin:round}
+.home svg{width:22px;height:23px;fill:currentColor}
 .home:active{transform:scale(.95)}
 @media print{ .home{display:none} }
 .iconbtn{flex:none;width:48px;height:48px;border-radius:50%;border:0;background:var(--glass);color:var(--fg);display:grid;place-items:center}
@@ -780,7 +780,7 @@ function render(){
   app.innerHTML = `
   <header class="top">
     <div class="top-row">
-      <a class="home" href="/" aria-label="Чарник новичка — на главную" title="На главную"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3l7.5 4.3v9.4L12 21l-7.5-4.3V7.3z M12 3l-4.5 12h9z"/></svg></a>
+      <a class="home" href="/" aria-label="Чарник новичка — на главную" title="На главную"><svg viewBox="0 0 15 16" aria-hidden="true"><path d="M3.33594 6.72062L0.0375 11.5922C-0.05875 11.7484 0.040625 11.9516 0.222813 11.9716L6.73094 12.6613L3.33594 6.72062ZM0.231562 9.85719L2.58437 6.03375L0.189375 4.59688C0.105937 4.54688 0 4.60687 0 4.70406V9.79187C0 9.91781 0.165312 9.96469 0.231562 9.85719ZM0.570312 13.2375L6.64531 15.9769C6.81094 16.0534 7 15.9322 7 15.75V13.6978L0.639063 13.0009C0.5 12.9853 0.444375 13.1756 0.570312 13.2375ZM3.10844 5.18188L5.60625 0.715C5.74187 0.494375 5.49406 0.238437 5.26937 0.366875L0.556562 3.44844C0.479375 3.49906 0.481875 3.61281 0.560625 3.66031L3.10844 5.18188ZM7.5 5.5H10.9128L7.92594 0.238125C7.82813 0.079375 7.66406 0 7.5 0C7.33594 0 7.17187 0.079375 7.07406 0.238125L4.08719 5.5H7.5ZM14.8106 4.59688L12.4156 6.03406L14.7684 9.8575C14.8344 9.965 15 9.91812 15 9.79187V4.70406C15 4.60687 14.8941 4.54688 14.8106 4.59688ZM11.8916 5.18188L14.4394 3.66C14.5184 3.6125 14.5206 3.49875 14.4434 3.44812L9.73063 0.366875C9.50594 0.238437 9.25813 0.494375 9.39375 0.715L11.8916 5.18188ZM14.3609 13.0009L8 13.6975V15.7497C8 15.9322 8.18906 16.0531 8.35469 15.9766L14.4297 13.2372C14.5556 13.1756 14.5 12.9853 14.3609 13.0009ZM11.6641 6.72062L8.26937 12.6613L14.7775 11.9716C14.9597 11.9512 15.0591 11.7484 14.9628 11.5922L11.6641 6.72062ZM7.5 6.5H4.36156L7.5 11.9922L10.6384 6.5H7.5Z"/></svg></a>
       <div class="top-btns">
         <button type="button" class="pillbtn" data-act="dict" aria-haspopup="dialog">
           <svg class="i" viewBox="0 0 24 24" aria-hidden="true"><path d="M5 5a2 2 0 0 1 2-2h12v15H7a2 2 0 0 0-2 2z"/><path d="M5 20a1 1 0 0 0 1 1h13"/><path d="M9.5 7.5h5"/></svg>Словарик
