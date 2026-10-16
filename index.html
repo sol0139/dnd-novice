@@ -180,6 +180,41 @@ h2{font-family:var(--f-head);font-weight:500;font-size:20px;line-height:1.15;let
 .sum-list b{font-family:var(--f-head);font-weight:600;font-size:14.5px;white-space:nowrap}
 .cr-sum .btn{align-self:flex-start}
 
+/* Список персонажей: действия на весь стол, поиск, второстепенные кнопки */
+.list-h{display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap}
+.list-h h2{display:flex;align-items:center;gap:8px}
+.list-acts{display:flex;flex-wrap:wrap;gap:8px}
+.search{width:100%;height:48px;padding:0 16px;border:0;border-radius:16px;background:var(--surface);box-shadow:var(--shadow);color:var(--fg);font:inherit;font-size:16px}
+.char-more{display:flex;flex-wrap:wrap;gap:6px 18px;padding:0 2px}
+.char-more .linkbtn{font-size:14px;font-weight:500}
+.linkbtn.muted{color:var(--fg-3)}
+.linkbtn[disabled]{opacity:.5}
+/* QR-код */
+.qr-dlg{margin:auto;width:min(360px,calc(100% - 32px));padding:0;border:0;border-radius:28px;background:var(--surface);color:var(--fg);box-shadow:var(--shadow-float)}
+.qr-dlg::backdrop{background:var(--scrim)}
+.qr-in{padding:22px;display:flex;flex-direction:column;gap:14px}
+.qr-in h3{font-family:var(--f-head);font-weight:500;font-size:20px;letter-spacing:-.4px}
+.qr-box{padding:14px;border-radius:20px;background:#fff}
+.qr-box svg{display:block;width:100%;height:auto}
+/* Шпаргалка стола */
+.tbl{display:flex;flex-direction:column;gap:10px}
+.tbl-card{padding:16px 18px;display:flex;flex-direction:column;gap:10px}
+.tbl-h{display:flex;align-items:baseline;justify-content:space-between;gap:10px;flex-wrap:wrap}
+.tbl-h h3{font-family:var(--f-head);font-weight:500;font-size:18px;letter-spacing:-.3px}
+.tbl-tiles{display:grid;grid-template-columns:repeat(auto-fill,minmax(96px,1fr));gap:6px}
+.tbl-tiles span{display:flex;flex-direction:column;gap:2px;padding:9px 10px;border-radius:14px;background:var(--neutral);min-width:0}
+.tbl-tiles small{font-size:11.5px;line-height:1.2;color:var(--fg-3)}
+.tbl-tiles b{font-family:var(--f-head);font-weight:600;font-size:19px}
+.tbl-sum{padding:16px 18px;display:flex;flex-direction:column;gap:8px;font-size:15px;line-height:1.45}
+/* Конструктор: что делают выбранные заклинания */
+.sel-info{border-radius:18px;background:var(--surface);box-shadow:var(--shadow)}
+.sel-info summary{padding:14px 16px;font-weight:600;font-size:15px;cursor:pointer}
+.sel-info ul{list-style:none;margin:0;padding:0 16px 14px;display:flex;flex-direction:column;gap:10px}
+.sel-info li{display:flex;flex-direction:column;gap:2px;font-size:14px;line-height:1.4;color:var(--fg-2)}
+.sel-info li b{font-weight:600;color:var(--fg)}
+.sel-info li small{font-size:12px;color:var(--fg-3)}
+@media print{ .top-row,.hero .eyebrow,.pick,.foot{display:none} .tbl-card,.tbl-sum{box-shadow:none;border:1px solid #ccc} }
+
 /* Шаблоны */
 .tpls{display:flex;flex-direction:column;gap:10px}
 .tpl{padding:18px 20px;display:flex;flex-direction:column;gap:10px}

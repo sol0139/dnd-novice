@@ -20,6 +20,8 @@ let confirmDel = null;  // id персонажа, которого спраши�
 let busy = false;       // идёт запрос — кнопки на это время гаснут
 // Для списка не тянем лист целиком: только имя расы и класс. Бесплатный трафик Supabase — 5 ГБ в месяц.
 const LIST_COLS = "id,name,share_slug,updated_at,race:data->race->>name,cls:data->class,app:data->source->>app";
+let tableMode = false;  // шпаргалка стола: ключевые числа всех героев на одном экране
+let tableRows = null;
 let review = null;      // импорт из LSS на проверке: живёт только в браузере, пока мастер не нажмёт «Сохранить»
 let error = readAuthError();
 
@@ -74,7 +76,8 @@ function viewGuest(){
     <p class="lead">Мастер собирает персонажа, игрок открывает его по ссылке. Способности разложены по ходу, каждое слово объяснено.</p>
     <div class="hero-btns">
       <button type="button" class="btn discord" data-act="login"${busy ? " disabled" : ""}>Войти через Discord</button>
-      <a class="btn surface" href="/demo">Посмотреть пример</a>
+      <a class="btn surface" href="/demo">Пример: воин</a>
+      <a class="btn surface" href="/demo/nissa">Пример: волшебница</a>
     </div>
     <p class="meta">Входят только мастера. Игрокам аккаунт не нужен.</p>
   </section>
@@ -99,10 +102,14 @@ function charCard(c){
     : `<div class="char-acts">
          <a class="btn primary sm" href="/c/${esc(c.share_slug)}">Открыть</a>
          <button type="button" class="btn neutral sm" data-act="copy" data-id="${c.id}">Ссылка игроку</button>
-         ${(c.app ?? c.data?.source?.app) === "builder" ? `<button type="button" class="btn neutral sm" data-act="edit" data-id="${c.id}">Изменить</button>` : ""}
-         <button type="button" class="btn sm del" data-act="askDel" data-id="${c.id}">Удалить</button>
+         <button type="button" class="btn neutral sm" data-act="qr" data-id="${c.id}" aria-haspopup="dialog">QR-код</button>
+       </div>
+       <div class="char-more">
+         ${(c.app ?? c.data?.source?.app) === "builder" ? `<button type="button" class="linkbtn" data-act="edit" data-id="${c.id}">Изменить</button>` : ""}
+         <button type="button" class="linkbtn" data-act="dup" data-id="${c.id}"${busy ? " disabled" : ""}>Сделать копию</button>
+         <button type="button" class="linkbtn muted" data-act="askDel" data-id="${c.id}">Удалить</button>
        </div>`;
-  return `<article class="char card">
+  return `<article class="char card" data-name="${esc(String(c.name).toLowerCase())}">
     <div class="char-h"><h3>${esc(c.name)}</h3><time datetime="${esc(c.updated_at)}">${when(c.updated_at)}</time></div>
     ${sub ? `<p class="char-sub">${esc(sub)}</p>` : ""}
     <div class="char-link">${esc(shareLink(c))}</div>
@@ -114,7 +121,13 @@ function viewMaster(){
   const list = !loaded
     ? `<p class="meta">Загружаем персонажей…</p>`
     : chars.length
-      ? `<div class="chars">${chars.map(charCard).join("")}</div>`
+      ? `<div class="list-h"><h2>Персонажи <span class="cnt">${chars.length}</span></h2>
+           <div class="list-acts">
+             <button type="button" class="btn surface sm" data-act="copyAll">Все ссылки</button>
+             <button type="button" class="btn surface sm" data-act="openTable">Шпаргалка стола</button>
+           </div></div>
+         ${chars.length > 5 ? `<input class="search" id="charSearch" type="search" placeholder="Найти по имени" autocomplete="off">` : ""}
+         <div class="chars">${chars.map(charCard).join("")}</div>`
       : `<div class="empty card">Здесь пока пусто. Создай первого персонажа, и игрок получит его по ссылке.</div>`;
   return `
   <section class="hero">
@@ -140,6 +153,79 @@ const WAY_ICONS = {
   dice:  `<svg class="i" viewBox="0 0 24 24" aria-hidden="true"><rect x="4" y="4" width="16" height="16" rx="4"/><circle cx="9" cy="9" r="1.2"/><circle cx="15" cy="15" r="1.2"/><circle cx="15" cy="9" r="1.2"/><circle cx="9" cy="15" r="1.2"/></svg>`,
   file:  `<svg class="i" viewBox="0 0 24 24" aria-hidden="true"><path d="M7 3h7l5 5v13H7z"/><path d="M14 3v5h5"/><path d="M10 14l2 2 3-4"/></svg>`
 };
+
+/* ---------- шпаргалка стола ---------- */
+// Только нужные поля, без описаний способностей
+const TABLE_COLS = "id,name,share_slug,cls:data->class,race:data->race->>name,ac:data->ac->>value,hp:data->hp->>max,speed:data->>speed,ab:data->abilities,skills:data->skills,ex:data->expertise,pb:data->>proficiencyBonus,pp:data->>passivePerception,half:data->>halfProf,sc:data->spellcasting,langs:data->languages,saves:data->saves";
+const TABLE_KEY = "novice-sheet:table";
+const ABBR = { str: "СИЛ", dex: "ЛОВ", con: "ТЕЛ", int: "ИНТ", wis: "МДР", cha: "ХАР" };
+const md = s => Math.floor(((+s || 10) - 10) / 2);
+const sgn = n => (n < 0 ? "−" : "+") + Math.abs(n);
+function tableHero(r){
+  const d = r.data || { class: r.cls, race: { name: r.race }, ac: { value: +r.ac }, hp: { max: +r.hp }, speed: +r.speed, abilities: r.ab || {},
+    skills: r.skills || [], expertise: r.ex || [], proficiencyBonus: +r.pb || 2, passivePerception: r.pp != null ? +r.pp : null,
+    halfProf: r.half === "true" || r.half === true, spellcasting: r.sc, languages: r.langs || [], saves: r.saves || [] };
+  const pb = +d.proficiencyBonus || 2, A = d.abilities || {};
+  const bonus = (id, ab) => md(A[ab]) + ((d.expertise || []).includes(id) ? 2 * pb : (d.skills || []).includes(id) ? pb : d.halfProf ? Math.floor(pb / 2) : 0);
+  return {
+    id: r.id, name: r.name, cls: d.class, race: d.race?.name, ac: d.ac?.value, hp: d.hp?.max, speed: d.speed,
+    pp: d.passivePerception ?? 10 + bonus("perception", "wis"), pi: 10 + bonus("insight", "wis"), pinv: 10 + bonus("investigation", "int"),
+    dc: d.spellcasting?.dc, atk: d.spellcasting?.attack, langs: d.languages || [], saves: d.saves || []
+  };
+}
+function readTablePick(){ try { return JSON.parse(localStorage.getItem(TABLE_KEY)); } catch (e) { return null; } }
+function viewTable(){
+  if (!tableRows) return `<p class="meta">Собираем числа…</p>`;
+  const heroes = tableRows.map(tableHero);
+  const pick = readTablePick();
+  const on = h => !pick || pick.includes(h.id);
+  const sel = heroes.filter(on);
+  const low = sel.length ? sel.reduce((a, b) => (b.pp < a.pp ? b : a)) : null;
+  const langs = [...new Set(sel.flatMap(h => h.langs))];
+  const tile = (l, v) => `<span><small>${l}</small><b>${v ?? "—"}</b></span>`;
+  return `
+  <section class="hero">
+    <p class="eyebrow"><button type="button" class="linkbtn" data-act="closeTable">← Мои персонажи</button></p>
+    <h1>Шпаргалка стола</h1>
+    <p class="lead">Числа, которые мастер спрашивает чаще всего. Отметь, кто сегодня играет.</p>
+  </section>
+  <div class="pick">${heroes.map(h => `<button type="button" class="pk" data-act="tablePick" data-id="${h.id}" aria-pressed="${on(h)}">${esc(h.name)}</button>`).join("")}</div>
+  ${sel.length ? `<section class="card tbl-sum">
+    ${low ? `<p><b>Засаду заметит не каждый.</b> Самое низкое пассивное Восприятие — ${low.pp} (${esc(low.name)}). Спрятанное со Сл ${low.pp + 1} и выше этот герой не заметит, если не ищет специально.</p>` : ""}
+    <p><b>Языки стола:</b> ${esc(langs.join(", ") || "—")}.</p>
+  </section>` : `<p class="meta">Никто не отмечен.</p>`}
+  <div class="tbl">${sel.map(h => `<article class="card tbl-card">
+    <div class="tbl-h"><h3>${esc(h.name)}</h3><span class="src">${esc([h.race, h.cls ? `${h.cls.name} ${h.cls.level}` : ""].filter(Boolean).join(" · "))}</span></div>
+    <div class="tbl-tiles">${tile("КД", h.ac)}${tile("Хиты", h.hp)}${tile("Скорость", h.speed ? h.speed / 5 + " кл." : "—")}${tile("Пасс. Восприятие", h.pp)}${tile("Пасс. Проницат.", h.pi)}${tile("Пасс. Анализ", h.pinv)}${h.dc ? tile("Сл заклинаний", h.dc) + tile("Атака закл.", sgn(h.atk)) : ""}</div>
+    <p class="meta">Спасброски с мастерством: ${h.saves.map(a => ABBR[a] || a).join(", ") || "—"}. Языки: ${esc(h.langs.join(", ") || "—")}.</p>
+  </article>`).join("")}</div>`;
+}
+async function openTable(){
+  tableMode = true; tableRows = null; render(); window.scrollTo({ top: 0 });
+  const { data, error: e } = await sb.from("characters").select(TABLE_COLS).order("name");
+  if (e){ console.error(e); toast("Не получилось собрать шпаргалку."); tableMode = false; render(); return; }
+  tableRows = data; render();
+}
+
+/* ---------- QR-код ссылки: библиотека грузится только когда нужна ---------- */
+let qrLoading = null;
+const loadQR = () => window.qrcode ? Promise.resolve() : (qrLoading = qrLoading || new Promise((ok, fail) => {
+  const s = document.createElement("script"); s.src = "/vendor/qrcode.js"; s.onload = ok; s.onerror = fail; document.head.appendChild(s);
+}));
+async function showQR(c){
+  try { await loadQR(); } catch (e) { toast("Не получилось нарисовать QR-код."); return; }
+  const qr = window.qrcode(0, "M"); qr.addData(shareLink(c)); qr.make();
+  let dlg = document.getElementById("qrDlg");
+  if (!dlg){ dlg = document.createElement("dialog"); dlg.id = "qrDlg"; dlg.className = "qr-dlg"; document.body.appendChild(dlg);
+    dlg.addEventListener("click", e => { if (e.target === dlg) dlg.close(); }); }
+  dlg.innerHTML = `<div class="qr-in">
+    <h3>${esc(c.name)}</h3>
+    <div class="qr-box">${qr.createSvgTag({ cellSize: 6, margin: 2, scalable: true })}</div>
+    <p class="meta">Игрок наводит камеру телефона на код и сразу попадает в свой лист.</p>
+    <div class="char-acts"><button type="button" class="btn neutral sm" data-act="copy" data-id="${c.id}">Скопировать ссылку</button><button type="button" class="btn primary sm" data-act="qrClose">Готово</button></div>
+  </div>`;
+  try { dlg.showModal(); } catch (e) { dlg.setAttribute("open", ""); }
+}
 
 /* ---------- импорт: экран проверки ---------- */
 const KIND_LABEL = { action: "Действие", bonus: "Бонус", reaction: "Реакция", passive: "Само", item: "Вещь", drop: "Убрать" };
@@ -308,7 +394,7 @@ function render(){
   app.innerHTML = `
     ${header()}
     ${error ? `<div class="alert" role="alert">${esc(error)}</div>` : ""}
-    ${!session ? viewGuest() : review ? viewReview() : CR.mode === "templates" ? viewTemplates(ctx) : CR.mode === "build" ? viewBuild(ctx) : viewMaster()}
+    ${!session ? viewGuest() : review ? viewReview() : tableMode ? viewTable() : CR.mode === "templates" ? viewTemplates(ctx) : CR.mode === "build" ? viewBuild(ctx) : viewMaster()}
     <footer class="foot">Правила D&amp;D 5e (2014). Часть материалов взята из System Reference Document 5.1 © Wizards of the Coast LLC, лицензия CC-BY-4.0. Популярность заклинаний — по данным D&amp;D Beyond.</footer>`;
 }
 
@@ -385,6 +471,31 @@ const H = {
     catch (e) { toast(link); }
   },
   askDel: b => { confirmDel = b.dataset.id; render(); },
+  qr: b => { const c = chars.find(x => x.id === b.dataset.id); if (c) showQR(c); },
+  qrClose: () => { const d = document.getElementById("qrDlg"); if (d) d.close(); },
+  copyAll: async () => {
+    const text = chars.map(c => `${c.name} — ${shareLink(c)}`).join("\n");
+    try { await navigator.clipboard.writeText(text); toast(`Ссылки скопированы: ${chars.length} шт. Вставь их в чат игры.`); }
+    catch (e) { toast(text); }
+  },
+  dup: async b => {
+    if (busy) return;
+    const { data, error: e } = await sb.from("characters").select("name,data").eq("id", b.dataset.id).single();
+    if (e || !data){ console.error(e); toast("Не получилось сделать копию."); return; }
+    const c = { ...data.data, name: `${data.name} (копия)`.slice(0, 80) };
+    if (c.source?.choices) c.source = { ...c.source, choices: { ...c.source.choices, name: c.name } };
+    await saveCharacter(c, null);
+    render();
+  },
+  openTable: () => openTable(),
+  closeTable: () => { tableMode = false; tableRows = null; render(); window.scrollTo({ top: 0 }); },
+  tablePick: b => {
+    const all = tableRows.map(r => r.id);
+    let pick = readTablePick() || all;
+    pick = pick.includes(b.dataset.id) ? pick.filter(x => x !== b.dataset.id) : [...pick, b.dataset.id];
+    try { localStorage.setItem(TABLE_KEY, JSON.stringify(pick)); } catch (e) {}
+    render();
+  },
   kind: b => {
     const f = review.char.features[+b.dataset.i];
     f.kind = b.dataset.k; f.guess = false;
@@ -423,6 +534,11 @@ document.addEventListener("click", e => {
   if (b && H[b.dataset.act]) H[b.dataset.act](b);
 });
 document.addEventListener("input", e => {
+  if (e.target.id === "charSearch"){
+    const q = e.target.value.trim().toLowerCase();
+    document.querySelectorAll(".char").forEach(el => { el.hidden = !!q && !el.dataset.name.includes(q); });
+    return;
+  }
   if (createInput(e, ctx)) return;
   const el = e.target.closest("[data-bind]");
   if (!el || !review) return;

@@ -174,6 +174,57 @@ h2 .dot{flex:none;width:10px;height:10px;border-radius:50%;background:var(--k)}
 .ca dd{font-size:14.5px;line-height:1.45;color:var(--fg-3)}
 .ca dd b{color:var(--fg);font-weight:600}
 
+/* Хиты: урон и лечение числом, временные хиты, длинная полоска для больших запасов */
+.hp-tools{display:flex;flex-wrap:wrap;gap:8px}
+.hp-tools .btn{flex:1;min-width:8em}
+.btn.danger{background:var(--danger);color:#fff}
+.temp{display:inline-flex;align-items:center;height:26px;padding:0 10px;margin-left:8px;border-radius:13px;background:color-mix(in srgb,var(--k-bonus) 18%,transparent);
+  font-family:var(--f-body);font-size:13px;font-weight:600;color:var(--fg-2);letter-spacing:0;vertical-align:middle}
+.hp-meter{position:relative;height:22px;border-radius:9px;background:var(--neutral);overflow:hidden;cursor:pointer}
+.hp-meter i{position:absolute;inset:0 auto 0 0;background:var(--accent);border-radius:9px;transition:width .2s}
+.hp-meter.low i{background:var(--danger)}
+.num-in{width:100%;height:64px;padding:0 16px;border:0;border-radius:18px;background:var(--neutral);color:var(--fg);
+  font-family:var(--f-head);font-weight:600;font-size:32px;text-align:center}
+.quicknums{display:flex;flex-wrap:wrap;gap:6px}
+.quicknums button{flex:1;min-width:3em;min-height:44px;border:0;border-radius:14px;background:var(--neutral);color:var(--fg);font-family:var(--f-head);font-weight:600;font-size:16px}
+.dr-acts{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.dr-acts .btn:last-child:nth-child(odd){grid-column:1 / -1}
+/* Спасброски от смерти */
+.ds{display:flex;flex-direction:column;gap:8px;width:100%}
+.ds-row{display:flex;align-items:center;gap:10px;font-size:14px}
+.ds-row span{min-width:5.5em;color:var(--fg-3)}
+.ds-row i{width:18px;height:18px;border-radius:50%;box-shadow:inset 0 0 0 2px currentColor;opacity:.5}
+.ds-row i.on{opacity:1;background:currentColor}
+.ds-row.ok{color:var(--accent-ink)}.ds-row.bad{color:var(--danger)}
+.ds-btns{display:flex;flex-wrap:wrap;gap:8px}
+/* Состояния и концентрация */
+.conds{display:flex;flex-direction:column;gap:8px}
+.cond{display:flex;align-items:flex-start;gap:12px;padding:12px 10px 12px 16px;border-radius:18px;background:color-mix(in srgb,var(--danger) 9%,var(--surface));box-shadow:var(--shadow)}
+.cond div{flex:1;min-width:0;display:flex;flex-direction:column;gap:2px}
+.cond b{font-weight:600;font-size:15px}
+.cond p{font-size:13.5px;line-height:1.35;color:var(--fg-3)}
+.cond.conc{background:color-mix(in srgb,var(--k-reaction) 12%,var(--surface))}
+.x{flex:none;width:36px;height:36px;border:0;border-radius:50%;background:var(--neutral);color:var(--fg-2);font-size:18px;line-height:1}
+.addcond{align-self:flex-start;min-height:40px;padding:8px 14px;border:1.5px dashed color-mix(in srgb,var(--fg-3) 45%,transparent);border-radius:16px;background:transparent;color:var(--fg-2);font-family:var(--f-btn);font-weight:600;font-size:14px}
+.cond-opt{display:flex;flex-direction:column;align-items:flex-start;gap:4px;width:100%;padding:14px 16px;border:0;border-radius:18px;background:var(--neutral);color:var(--fg);text-align:left}
+.cond-opt[aria-pressed="true"]{background:color-mix(in srgb,var(--danger) 14%,var(--neutral));box-shadow:inset 0 0 0 1.5px color-mix(in srgb,var(--danger) 45%,transparent)}
+.cond-opt b{font-weight:600;font-size:15.5px}
+.cond-opt span{font-size:13.5px;line-height:1.4;color:var(--fg-3)}
+/* Вдохновение, подсказки, заметки, приветствие */
+.qbtn[aria-pressed="true"]{background:color-mix(in srgb,var(--k-bonus) 22%,var(--surface))}
+.qbtn svg{width:18px;height:18px;fill:none;stroke:currentColor;stroke-width:1.9;stroke-linejoin:round}
+.qbtn[aria-pressed="true"] svg{fill:currentColor}
+.tips summary{list-style:none;display:flex;align-items:center;justify-content:space-between;gap:12px;padding:16px 20px;font-weight:600;font-size:15.5px;cursor:pointer}
+.tips summary::-webkit-details-marker{display:none}
+.tips[open] .chev{transform:rotate(-135deg) translateY(-1px)}
+.tips ol{margin:0;padding:0 20px 18px 40px;display:flex;flex-direction:column;gap:8px;font-size:15px;line-height:1.45;color:var(--fg-2)}
+.notes{width:100%;min-height:140px;padding:14px 16px;border:0;border-radius:20px;background:var(--surface);box-shadow:var(--shadow);color:var(--fg);font:inherit;font-size:15.5px;line-height:1.45;resize:vertical}
+.hello{padding:18px 20px;display:flex;flex-direction:column;gap:10px;background:color-mix(in srgb,var(--accent) 10%,var(--surface))}
+.hello h3{font-family:var(--f-head);font-weight:500;font-size:18px;letter-spacing:-.3px}
+.hello ol{margin:0;padding-left:20px;display:flex;flex-direction:column;gap:6px;font-size:15px;line-height:1.45;color:var(--fg-2)}
+.hello .btn{align-self:flex-start}
+.offline{padding:12px 16px;border-radius:16px;background:color-mix(in srgb,var(--k-bonus) 14%,var(--surface));font-size:14px;line-height:1.4}
+
 /* Магия */
 .badges{display:flex;flex-wrap:wrap;gap:6px}
 .badge{display:inline-flex;align-items:center;height:26px;padding:0 10px;border-radius:13px;background:var(--neutral);font-size:12.5px;font-weight:500;color:var(--fg-3)}
@@ -348,7 +399,7 @@ const ABBR = { str: "СИЛ", dex: "ЛОВ", con: "ТЕЛ", int: "ИНТ", wis: 
 const ICON_MOON = `<svg class="i" viewBox="0 0 24 24" aria-hidden="true"><path d="M20 14.2A8 8 0 1 1 9.8 4a6.4 6.4 0 0 0 10.2 10.2z"/></svg>`;
 const ICON_SUN  = `<svg class="i" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="4"/><path d="M12 2.5v2M12 19.5v2M2.5 12h2M19.5 12h2M5.3 5.3l1.4 1.4M17.3 17.3l1.4 1.4M5.3 18.7l1.4-1.4M17.3 6.7l1.4-1.4"/></svg>`;
 
-let CH, KB, S, snapshot = null, drawerMode = null;
+let CH, KB, S, snapshot = null, drawerMode = null, offlineNote = false;
 const byId = {};
 
 /* ---------- помощники ---------- */
@@ -404,7 +455,8 @@ const spendLeft = f => { const p = pool(f); return p ? Math.floor(usesLeft(p) / 
 
 /* ---------- состояние ---------- */
 const freshTurn  = () => ({ action: null, bonus: null });
-const freshState = () => ({ hp: CH.hp.max, used: {}, slots: {}, hitDiceUsed: 0, turn: freshTurn() });
+const freshState = () => ({ hp: CH.hp.max, temp: 0, used: {}, slots: {}, hitDiceUsed: 0, turn: freshTurn(),
+  conc: null, conds: [], death: { s: 0, f: 0 }, insp: false, notes: "" });
 // [[ключ|текст]] → просто текст (внутри кнопок подчёркнутые слова не нужны)
 const plainText  = s => String(s).replace(/\[\[[a-z0-9-]+\|([^\]]+)\]\]/g, "$1");
 function load(){
@@ -415,7 +467,26 @@ function load(){
   return freshState();
 }
 function save(){ try { localStorage.setItem(KEY, JSON.stringify(S)); } catch (e) {} }
-const setHP = n => { S.hp = Math.max(0, Math.min(CH.hp.max, n)); };
+const setHP = n => {
+  const was = S.hp;
+  S.hp = Math.max(0, Math.min(CH.hp.max, n));
+  if (S.hp > 0) S.death = { s: 0, f: 0 };
+  // без сознания концентрацию не удержать
+  if (S.hp === 0 && was > 0 && S.conc){ const c = S.conc.name; S.conc = null; setTimeout(() => toast(`Хиты на нуле: концентрация на «${c}» потеряна.`), 0); }
+};
+// Урон: сначала снимает временные хиты, а при концентрации напоминает о спасброске
+function takeDamage(n){
+  if (n <= 0) return;
+  const absorbed = Math.min(S.temp || 0, n);
+  S.temp = (S.temp || 0) - absorbed;
+  const rest = n - absorbed;
+  const conc = S.conc && rest + absorbed > 0 ? S.conc.name : null;
+  setHP(S.hp - rest);
+  const parts = [];
+  if (absorbed) parts.push(`${absorbed} ушло во временные хиты`);
+  if (conc && S.hp > 0) parts.push(`концентрация на «${conc}»: спасбросок Телосложения Сл ${Math.max(10, Math.floor(n / 2))}, провал — заклинание гаснет`);
+  if (parts.length) toast(`Урон ${n}: ${parts.join("; ")}.`);
+}
 const snap  = () => { snapshot = JSON.parse(JSON.stringify(S)); };
 
 /* ---------- кусочки разметки ---------- */
@@ -541,22 +612,32 @@ function panelStats(){
 
 function panelCombat(){
   const cf = CH.features.filter(f => scene(f) === "combat");
-  const bar = Array.from({ length: CH.hp.max }, (_, i) =>
-    `<button type="button" data-act="hpset" data-i="${i + 1}" aria-label="Выставить ${i + 1} хитов"></button>`).join("");
+  // До 20 хитов — деления, которые можно тапать; больше — сплошная полоска
+  const bar = CH.hp.max <= 20
+    ? `<div class="hp-bar" id="hpBar" style="--n:${CH.hp.max}">${Array.from({ length: CH.hp.max }, (_, i) =>
+        `<button type="button" data-act="hpset" data-i="${i + 1}" aria-label="Выставить ${i + 1} хитов"></button>`).join("")}</div>`
+    : `<div class="hp-meter" id="hpBar" data-act="hpmeter" role="slider" aria-label="Хиты" aria-valuemin="0" aria-valuemax="${CH.hp.max}"><i id="hpFill"></i></div>`;
+  const tips = (KB.tips || {})[CH.class.id];
   return `<section class="panel" id="p-combat" role="tabpanel" aria-labelledby="t-combat">
+    ${tips ? `<details class="tips card"><summary><span>Как играть: ${esc(CH.class.name.toLowerCase())}</span><span class="chev" aria-hidden="true"></span></summary>
+      <ol>${tips.map(t => `<li>${esc(t)}</li>`).join("")}</ol></details>` : ""}
     <section class="sec">
       <div class="card hp">
         <div class="hp-row">
-          <div><span class="tl">${term("hp", "Хиты")}</span><div class="hp-num"><b id="hpCur"></b><small>/ ${CH.hp.max}</small></div></div>
+          <div><span class="tl">${term("hp", "Хиты")}</span><div class="hp-num"><b id="hpCur"></b><small>/ ${CH.hp.max}</small><span class="temp" id="hpTemp" hidden></span></div></div>
           <div class="hp-btns">
             <button type="button" class="round" data-act="hp-" aria-label="Отнять хит">−</button>
             <button type="button" class="round" data-act="hp+" aria-label="Добавить хит">+</button>
           </div>
         </div>
-        <div class="hp-bar" id="hpBar" style="--n:${CH.hp.max}">${bar}</div>
-        <p class="meta">${gf("Получила", "Получил")} урон — жми «−» или тапни деление. ${gf("Подлечилась", "Подлечился")} — «+».</p>
+        ${bar}
+        <div class="hp-tools">
+          <button type="button" class="btn neutral" data-act="hpInput" data-mode="dmg" aria-haspopup="dialog">Урон числом</button>
+          <button type="button" class="btn neutral" data-act="hpInput" data-mode="heal" aria-haspopup="dialog">Лечение</button>
+        </div>
         <div class="down" id="down" hidden></div>
       </div>
+      <div class="conds" id="conds"></div>
       <div class="stats2">
         <div class="tile card"><span class="tl">${term("ac", "Класс доспеха")}</span><span class="tv">${CH.ac.value}</span><span class="ts">Врагу нужно ${CH.ac.value} или больше, чтобы попасть</span></div>
         <div class="tile card"><span class="tl">${term("initiative", "Инициатива")}</span><span class="tv">${sg(initB())}</span><span class="ts">В начале боя брось к20 и прибавь</span></div>
@@ -618,6 +699,10 @@ function panelGear(){
       <ul class="card list">${CH.equipment.map(e =>
         `<li class="li"><b>${esc(e.name)}${e.qty ? `<span class="q">×${e.qty}</span>` : ""}</b><span>${rich(e.note)}</span></li>`).join("")}</ul>
     </section>
+    <section class="sec">
+      <div class="sec-h"><h2>Заметки</h2><p>Имена, подсказки, найденные вещи, долги. Видно только на этом устройстве.</p></div>
+      <textarea class="notes" id="notes" placeholder="Например: трактирщик Борис что-то скрывает. Должны гному 5 зм.">${esc(S.notes || "")}</textarea>
+    </section>
   </section>`;
 }
 
@@ -646,6 +731,23 @@ function renderDict(){
     <div>${Object.values(KB.glossary).map(g => `<div class="dict-item"><h4>${esc(g.title)}</h4><p>${esc(plainText(g.text))}</p></div>`).join("")}</div>`;
 }
 
+/* Подсказка при первом входе: три шага, чтобы не потеряться */
+const HELLO_KEY = "novice-sheet:hello";
+function hello(){
+  let seen = false;
+  try { seen = !!localStorage.getItem(HELLO_KEY); } catch (e) {}
+  if (seen) return "";
+  return `<section class="hello card" id="hello">
+    <h3>Как пользоваться листом</h3>
+    <ol>
+      <li>Подчёркнутые слова объясняют себя — тапни любое.</li>
+      <li>В бою открой «Боевку»: «Действие» и «Бонусное» покажут, что можно сделать в свой ход.</li>
+      <li>Хиты, потраченные способности и заметки запоминаются на этом телефоне.</li>
+    </ol>
+    <button type="button" class="btn primary" data-act="helloDone">Понятно</button>
+  </section>`;
+}
+
 function render(){
   app.innerHTML = `
   <header class="top">
@@ -663,9 +765,10 @@ function render(){
       ${CH.pitch ? `<p class="pitch">${rich(CH.pitch)}</p>` : ""}
       ${CH.background?.name ? `<p class="bgline">Прошлое: ${esc(CH.background.name)}${CH.background.note ? ", " + esc(CH.background.note) : ""}</p>` : ""}
     </div>
-    <div class="quick" role="group" aria-label="Отдых">
+    <div class="quick" role="group" aria-label="Отдых и вдохновение">
       <button type="button" class="qbtn" data-act="short" aria-haspopup="dialog">Короткий отдых</button>
       <button type="button" class="qbtn" data-act="long" aria-haspopup="dialog">Длинный отдых</button>
+      <button type="button" class="qbtn" id="inspBtn" data-act="insp" aria-pressed="false"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3.5l2.6 5.3 5.9.9-4.3 4.1 1 5.8-5.2-2.7-5.2 2.7 1-5.8-4.3-4.1 5.9-.9z"/></svg>Вдохновение</button>
     </div>
     <div class="tabs${hasMagic() ? " t4" : ""}" role="tablist" aria-label="Разделы чарника" style="--tabs:${hasMagic() ? 4 : 3}">
       <button type="button" class="tab" role="tab" id="t-stats" data-tab="stats" aria-controls="p-stats" aria-selected="true" aria-label="Характеристики"><svg class="i" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="8" r="3.6"/><path d="M5 20.2c.9-3.6 3.7-5.6 7-5.6s6.1 2 7 5.6"/></svg><span class="long">Характеристики</span><span class="short" aria-hidden="true">Статы</span></button>
@@ -674,6 +777,8 @@ function render(){
       <button type="button" class="tab" role="tab" id="t-gear" data-tab="gear" aria-controls="p-gear" aria-selected="false"><svg class="i" viewBox="0 0 24 24" aria-hidden="true"><path d="M8.5 7V5.5A2.5 2.5 0 0 1 11 3h2a2.5 2.5 0 0 1 2.5 2.5V7"/><rect x="4.5" y="7" width="15" height="14" rx="4.5"/><path d="M9 13h6v4H9z"/></svg><span>Снаряга</span></button>
     </div>
   </header>
+  ${offlineNote ? `<p class="offline">Нет связи с сервером: открыта копия, сохранённая на этом устройстве.</p>` : ""}
+  ${hello()}
   <div id="panels">${panelStats()}${panelCombat()}${panelMagic()}${panelGear()}</div>
   <footer class="foot">
     <p>Правила D&amp;D 5e (2014). Часть материалов взята из System Reference Document 5.1 © Wizards of the Coast LLC, лицензия CC-BY-4.0. Описания пересказаны простыми словами.</p>
@@ -690,17 +795,45 @@ function refresh(){
   $("#hpBar").classList.toggle("low", low);
   $$("#hpBar button").forEach((b, i) => b.classList.toggle("off", i >= S.hp));
 
+  const fill = $("#hpFill");
+  if (fill){ fill.style.width = `${(S.hp / CH.hp.max) * 100}%`; $("#hpBar").setAttribute("aria-valuenow", S.hp); }
+  const tEl = $("#hpTemp");
+  if (tEl){ tEl.hidden = !(S.temp > 0); tEl.textContent = `+${S.temp} врем.`; }
+
   const down = $("#down");
   if (S.hp === 0){
     const rel = CH.features.find(f => f.trigger === "zero-hp");
     down.hidden = false;
-    down.innerHTML = rel && usesLeft(rel) > 0
-      ? `<p>Хиты на нуле. Но срабатывает «${esc(rel.name)}», и ты остаёшься на ногах.</p>
-         <button type="button" class="btn primary" data-act="use" data-id="${rel.id}">Встать с 1 хитом</button>`
-      : `<p>Ты без сознания. В начале каждого своего хода бросай ${term("death-save", "спасбросок от смерти")}: к20, 10 и выше — успех.</p>`;
+    if (rel && usesLeft(rel) > 0){
+      down.innerHTML = `<p>Хиты на нуле. Но срабатывает «${esc(rel.name)}», и ты остаёшься на ногах.</p>
+         <button type="button" class="btn primary" data-act="use" data-id="${rel.id}">Встать с 1 хитом</button>`;
+    } else {
+      const d = S.death || { s: 0, f: 0 };
+      const pips = (n, cls) => Array.from({ length: 3 }, (_, i) => `<i class="${i < n ? "on" : ""}"></i>`).join("");
+      const state = d.f >= 3 ? "Три провала: герой погиб. Поговори с мастером." : d.s >= 3 ? "Три успеха: ты стабилен, но без сознания. Очнёшься через 1к4 часа или когда тебя подлечат." : "";
+      down.innerHTML = `<p>Ты без сознания. В начале каждого своего хода бросай ${term("death-save", "спасбросок от смерти")}: к20, 10 и выше — успех. 1 — два провала, 20 — встаёшь с 1 хитом. Урон по тебе — провал.</p>
+        <div class="ds"><div class="ds-row ok"><span>Успехи</span>${pips(d.s)}</div><div class="ds-row bad"><span>Провалы</span>${pips(d.f)}</div></div>
+        ${state ? `<p><b>${state}</b></p>` : `<div class="ds-btns">
+          <button type="button" class="btn primary" data-act="death" data-v="s">Успех</button>
+          <button type="button" class="btn danger" data-act="death" data-v="f">Провал</button>
+          <button type="button" class="btn neutral" data-act="death" data-v="20">Выпало 20</button>
+        </div>`}
+        <button type="button" class="btn neutral" data-act="death" data-v="reset">Сбросить отметки</button>`;
+    }
   } else {
     down.hidden = true;
   }
+
+  // Состояния и концентрация
+  const conds = $("#conds");
+  if (conds){
+    const list = (KB.conditions || []).filter(c => (S.conds || []).includes(c.id));
+    conds.innerHTML = (S.conc ? `<div class="cond conc"><div><b>${term("concentration", "Концентрация")}: ${esc(S.conc.name)}</b><p>Получишь урон — спасбросок Телосложения. Новое заклинание с концентрацией сбросит это.</p></div><button type="button" class="x" data-act="concOff" aria-label="Сбросить концентрацию">×</button></div>` : "")
+      + list.map(c => `<div class="cond"><div><b>${esc(c.name)}</b><p>${esc(c.short)}</p></div><button type="button" class="x" data-act="condOff" data-id="${c.id}" aria-label="Снять: ${esc(c.name)}">×</button></div>`).join("")
+      + `<button type="button" class="addcond" data-act="conds" aria-haspopup="dialog">+ Состояние</button>`;
+  }
+  const ib = $("#inspBtn");
+  if (ib) ib.setAttribute("aria-pressed", String(!!S.insp));
 
   CH.features.filter(f => f.uses).forEach(f => {
     const el = $("#u-" + f.id);
@@ -749,6 +882,7 @@ function refresh(){
   themeIcon();
   if (drawerMode && drawerMode.startsWith("rest-") && $("#drawer").open) renderRest(drawerMode.slice(5));
   if (drawerMode && drawerMode.startsWith("slot-") && $("#drawer").open) renderSlot(drawerMode.slice(5));
+  if (drawerMode === "conds" && $("#drawer").open) renderConds();
   save();
 }
 
@@ -839,6 +973,26 @@ function renderRest(kind){
   html += `<button type="button" class="btn wide primary" data-act="${isS ? "restShort" : "restLong"}">${isS ? "Отдохнуть часок" : "Переночевать"}</button>`;
   $("#drBody").innerHTML = html;
 }
+/* Урон или лечение числом: удобно, когда хитов много */
+function renderHpInput(mode){
+  $("#drTitle").textContent = mode === "heal" ? "Лечение" : "Урон";
+  $("#drBody").innerHTML = `
+    <p class="meta">${mode === "heal" ? "Сколько хитов вернулось? Временные хиты не складываются: остаётся большее." : "Сколько урона пришло? Сначала он снимает временные хиты."}</p>
+    <input class="num-in" id="hpAmt" type="number" inputmode="numeric" min="1" max="999" placeholder="0" aria-label="Число">
+    <div class="quicknums">${[1, 2, 3, 5, 8, 10].map(n => `<button type="button" data-act="hpAdd" data-v="${n}">+${n}</button>`).join("")}</div>
+    <div class="dr-acts">
+      ${mode === "heal"
+        ? `<button type="button" class="btn primary" data-act="hpApply" data-mode="heal">Вернуть хиты</button><button type="button" class="btn neutral" data-act="hpApply" data-mode="temp">Временные хиты</button>`
+        : `<button type="button" class="btn danger" data-act="hpApply" data-mode="dmg">Получить урон</button>`}
+    </div>`;
+  setTimeout(() => { const i = $("#hpAmt"); if (i) i.focus(); }, 50);
+}
+function renderConds(){
+  $("#drTitle").textContent = "Состояния";
+  $("#drBody").innerHTML = `<p class="meta">Мастер говорит «ты отравлен» или «ты лежишь» — отметь здесь, и лист напомнит, что это значит.</p>
+    <div class="opts">${(KB.conditions || []).map(c => `<button type="button" class="cond-opt" data-act="condToggle" data-id="${c.id}" aria-pressed="${(S.conds || []).includes(c.id)}"><b>${esc(c.name)}</b><span>${esc(c.text)}</span></button>`).join("")}</div>`;
+}
+
 /* Подсказка после заклинания: что бросать */
 function spellToast(sp, l){
   const parts = [sp.name + (l ? ` (ячейка ${l} круга)` : "")];
@@ -846,8 +1000,14 @@ function spellToast(sp, l){
   else if (sp.save) parts.push(`цель спасается: ${ABBR[sp.save.ab]} против ${sp.save.dc}${sp.dmg ? `, урон ${showF(sp.dmg.dice)}` : ""}`);
   else if (sp.dmg) parts.push(`урон ${showF(sp.dmg.dice)}${sp.count ? ` × ${sp.count}` : ""}`);
   if (sp.heal) parts.push(`лечит ${showF(sp.heal)}`);
-  if (sp.conc) parts.push("держи концентрацию");
   return parts[0] + (parts.length > 1 ? ": " + parts.slice(1).join(", ") : "") + ".";
+}
+// Заклинание с концентрацией становится текущим; прежнее гаснет
+function startConc(sp){
+  if (!sp.conc) return "";
+  const prev = S.conc && S.conc.id !== sp.id ? S.conc.name : null;
+  S.conc = { id: sp.id, name: sp.name };
+  return prev ? ` Концентрация на «${prev}» сброшена.` : " Держишь концентрацию.";
 }
 /* Шторка выбора: что можно сделать действием или бонусным действием */
 function optFeature(f, slot){
@@ -905,8 +1065,40 @@ drawer.addEventListener("close", () => { drawerMode = null; });
 
 /* ---------- что делает каждая кнопка ---------- */
 const H = {
-  "hp-": () => setHP(S.hp - 1),
+  "hp-": () => takeDamage(1),
   "hp+": () => setHP(S.hp + 1),
+  hpmeter: (b, e) => {
+    const r = b.getBoundingClientRect();
+    const x = e && typeof e.clientX === "number" ? e.clientX : r.right;
+    setHP(Math.round(Math.max(0, Math.min(1, (x - r.left) / r.width)) * CH.hp.max));
+  },
+  hpInput: b => { drawerMode = "hp"; renderHpInput(b.dataset.mode); openDrawer(); },
+  hpAdd: b => { const i = $("#hpAmt"); if (i) i.value = (parseInt(i.value, 10) || 0) + +b.dataset.v; },
+  hpApply: b => {
+    const n = parseInt(($("#hpAmt") || {}).value, 10) || 0;
+    if (n <= 0){ toast("Впиши число."); return; }
+    const m = b.dataset.mode;
+    if (m === "dmg") takeDamage(n);
+    else if (m === "heal"){ setHP(S.hp + n); toast(`+${n} хитов. Теперь ${S.hp} из ${CH.hp.max}.`); }
+    else { S.temp = Math.max(S.temp || 0, n); toast(`Временные хиты: ${S.temp}. Урон сначала снимает их.`); }
+    drawer.close();
+  },
+  death: b => {
+    const d = S.death || (S.death = { s: 0, f: 0 }), v = b.dataset.v;
+    if (v === "s") d.s = Math.min(3, d.s + 1);
+    else if (v === "f") d.f = Math.min(3, d.f + 1);
+    else if (v === "20"){ setHP(1); toast("Двадцать! Ты приходишь в себя с 1 хитом."); }
+    else S.death = { s: 0, f: 0 };
+  },
+  conds: () => { drawerMode = "conds"; renderConds(); openDrawer(); drawer.scrollTop = 0; },
+  condToggle: b => { const id = b.dataset.id, c = S.conds || (S.conds = []); const i = c.indexOf(id); if (i >= 0) c.splice(i, 1); else c.push(id); },
+  condOff: b => { S.conds = (S.conds || []).filter(x => x !== b.dataset.id); },
+  concOff: () => { if (S.conc) toast(`Концентрация на «${S.conc.name}» сброшена.`); S.conc = null; },
+  insp: () => {
+    S.insp = !S.insp;
+    toast(S.insp ? "Вдохновение! Потрать его, чтобы бросить любую атаку, проверку или спасбросок с преимуществом. Его дарит мастер за яркую игру." : "Вдохновение потрачено.");
+  },
+  helloDone: () => { try { localStorage.setItem(HELLO_KEY, "1"); } catch (e) {} const h = $("#hello"); if (h) h.remove(); },
   hpset: b => { const i = +b.dataset.i; setHP(S.hp === i ? i - 1 : i); },
 
   // «Использовать» тратит, повторное нажатие («Вернуть») возвращает
@@ -937,7 +1129,7 @@ const H = {
     if (!l) return;
     S.slots[l] = (S.slots[l] || 0) + 1;
     if ((sp.kind === "action" || sp.kind === "bonus") && !S.turn[sp.kind]) S.turn[sp.kind] = { spell: sp.id, name: sp.name, slotLevel: l };
-    toast(spellToast(sp, l));
+    toast(spellToast(sp, l) + startConc(sp));
   },
 
   unuse: b => {
@@ -962,7 +1154,7 @@ const H = {
       let l = 0;
       if (sp.level){ l = slotFor(sp.level); if (!l) return; S.slots[l] = (S.slots[l] || 0) + 1; }
       S.turn[slot] = { spell: sp.id, name: sp.name, slotLevel: l };
-      toast(spellToast(sp, l));
+      toast(spellToast(sp, l) + startConc(sp));
     } else {
       const f = byId[b.dataset.id];
       let consumed = false, spent = null;
@@ -1017,6 +1209,7 @@ const H = {
   restLong: () => {
     snap();
     S.hp = CH.hp.max; S.used = {}; S.slots = {}; S.hitDiceUsed = 0; S.turn = freshTurn();
+    S.temp = 0; S.conc = null; S.death = { s: 0, f: 0 };
     drawer.close();
     toast(`Длинный отдых. Хиты полные, способности${slotLevels().length ? ", ячейки" : ""} и кость хитов вернулись.`, true);
   },
@@ -1047,8 +1240,16 @@ document.addEventListener("click", e => {
   if (t){ openTerm(t.dataset.term); return; }
   const b = e.target.closest("[data-act]");
   if (!b || !H[b.dataset.act]) return;
-  H[b.dataset.act](b);
+  H[b.dataset.act](b, e);
   refresh();
+});
+// Заметки сохраняются на лету, без перерисовки
+document.addEventListener("input", e => {
+  if (e.target.id === "notes" && S){ S.notes = e.target.value; save(); }
+});
+document.addEventListener("keydown", e => {
+  // preventDefault: иначе Enter «нажмёт» кнопку, на которую вернётся фокус, и шторка откроется снова
+  if (e.key === "Enter" && e.target.id === "hpAmt"){ e.preventDefault(); const b = $("#drBody [data-act='hpApply']"); if (b) b.click(); }
 });
 
 /* ---------- запуск: откуда брать персонажа ---------- */
@@ -1063,17 +1264,30 @@ async function loadCharacter(){
     try { localStorage.removeItem("novice-sheet:preview:v2"); } catch (e) {}
     return data ? { id: "preview", data } : null;
   }
+  const demo = location.pathname.match(/^\/demo\/([a-z0-9-]+)\/?$/i);
+  if (demo) return { id: "demo-" + demo[1], data: await getJSON(`/data/demo-${demo[1]}.json`) };
   const m = location.pathname.match(/^\/c\/([a-z0-9]+)\/?$/i);
   if (!m) return { id: "demo", data: await getJSON("/data/mirta.json") };
   const cfg = window.APP_CONFIG || {};
-  const r = await fetch(`${cfg.supabaseUrl}/rest/v1/rpc/get_shared_character`, {
-    method: "POST",
-    headers: { "Content-Type": "application/json", apikey: cfg.supabaseKey },
-    body: JSON.stringify({ slug: m[1] })
-  });
-  if (!r.ok) throw new Error("rpc " + r.status);
-  const rows = await r.json();
-  return rows.length ? { id: m[1], data: rows[0].data } : null;
+  const CACHE = `novice-sheet:copy:${m[1]}`;
+  try {
+    const r = await fetch(`${cfg.supabaseUrl}/rest/v1/rpc/get_shared_character`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json", apikey: cfg.supabaseKey },
+      body: JSON.stringify({ slug: m[1] })
+    });
+    if (!r.ok) throw new Error("rpc " + r.status);
+    const rows = await r.json();
+    if (!rows.length){ try { localStorage.removeItem(CACHE); } catch (e) {} return null; }
+    // Копия на устройстве: если на игре пропадёт связь, лист всё равно откроется
+    try { localStorage.setItem(CACHE, JSON.stringify(rows[0].data)); } catch (e) {}
+    return { id: m[1], data: rows[0].data };
+  } catch (err){
+    let copy = null;
+    try { copy = JSON.parse(localStorage.getItem(CACHE)); } catch (e) {}
+    if (copy){ offlineNote = true; return { id: m[1], data: copy }; }
+    throw err;
+  }
 }
 
 Promise.all([loadCharacter(), getJSON("/data/knowledge.json")])

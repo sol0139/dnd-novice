@@ -156,7 +156,7 @@ export function viewBuild(ctx){
   if (ci){
     const S = SPL.spells;
     const chip = (act, id, on) => pk(act, id, esc(S[id].name), on, ` title="${esc(S[id].plain.replace(/\[\[[a-z0-9-]+\|([^\]]+)\]\]/g, "$1"))}"`);
-    let body = `<p class="meta">Списки начинаются с самых популярных у игроков. Наведи или задержи палец на названии, чтобы прочитать, что оно делает.</p>`;
+    let body = `<p class="meta">Списки начинаются с самых популярных у игроков. Что делает каждое выбранное — в списке под плашками.</p>`;
     if (ci.cantrips) body += `<div class="pick-h"><b>Заговоры</b>${counter(d.cantrips.length, ci.cantrips)}</div>
       <div class="pick">${ci.cantripPool.map(id => chip("crCantrip", id, d.cantrips.includes(id))).join("")}</div>`;
     if (ci.always.length) body += `<div class="pick-h"><b>Всегда подготовлены</b></div>
@@ -166,6 +166,9 @@ export function viewBuild(ctx){
       const ids = ci.leveledPool.filter(id => S[id].level === l);
       if (ids.length) body += `${ci.maxLevel > 1 ? `<p class="pick-l">${l} круг</p>` : ""}<div class="pick">${ids.map(id => chip("crSpell", id, d.spells.includes(id))).join("")}</div>`;
     }
+    const chosen = [...d.cantrips, ...ci.always, ...d.spells].filter(id => S[id]);
+    if (chosen.length) body += `<details class="sel-info"><summary>Что делают выбранные (${chosen.length})</summary><ul>${chosen.map(id =>
+      `<li><b>${esc(S[id].name)}</b> <small>${S[id].level ? `${S[id].level} круг` : "заговор"}</small><span>${esc(S[id].plain.replace(/\[\[[a-z0-9-]+\|([^\]]+)\]\]/g, "$1").replace(/\{\{([^|{}]*)\|[^{}]*\}\}/g, "$1"))}</span></li>`).join("")}</ul></details>`;
     const slots = Object.entries(ci.slots).map(([l, n]) => `${n} × ${l} круг`).join(", ");
     spellSec = sec("Заклинания", `Ячейки на этом уровне: ${slots}${ci.type === "pact" ? ", возвращаются после короткого отдыха" : ""}.`, body, "cr-spells");
   }
