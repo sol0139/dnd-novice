@@ -216,6 +216,7 @@ h2 .dot{flex:none;width:10px;height:10px;border-radius:50%;background:var(--k)}
 .tips ol{margin:0;padding:0 20px 18px 40px;display:flex;flex-direction:column;gap:8px;font-size:15px;line-height:1.45;color:var(--fg-2)}
 .notes{width:100%;min-height:140px;padding:14px 16px;border:0;border-radius:20px;background:var(--surface);box-shadow:var(--shadow);color:var(--fg);font:inherit;font-size:15.5px;line-height:1.45;resize:vertical}
 .hello{padding:18px 20px;display:flex;flex-direction:column;gap:10px;background:color-mix(in srgb,var(--accent) 10%,var(--surface))}
+.r18{display:inline-block;margin-left:6px;padding:1px 7px;border-radius:7px;font-size:11.5px;font-weight:700;letter-spacing:.02em;vertical-align:1px;background:color-mix(in srgb,var(--danger) 16%,transparent);color:var(--danger)}
 .hello h3{font-family:var(--f-head);font-weight:500;font-size:18px;letter-spacing:-.3px}
 .hello ol{margin:0;padding-left:20px;display:flex;flex-direction:column;gap:6px;font-size:15px;line-height:1.45;color:var(--fg-2)}
 .hello .btn{align-self:flex-start}
@@ -447,6 +448,11 @@ const plural = (n, one, few, many) => { const t = n % 10, h = n % 100; return t 
 const cap = s => s.charAt(0).toUpperCase() + s.slice(1);
 // Род в подсказках: pronoun "she" в данных персонажа — женский, иначе мужской
 const gf = (f, m) => (CH && CH.pronoun === "she" ? f : m);
+// Тон подсказок: мастер может включить герою «18+» — тогда берём вариант с матом, если он есть.
+// {{она|он}} в текстах базы знаний подстраивается под местоимение героя.
+const adult = () => !!(CH && CH.tone === "18");
+const T = (clean, rude) => (adult() ? rude : clean);
+const tx = (o, k) => String((adult() && o[k + "18"]) || o[k] || "").replace(/\{\{([^{}|]*)\|([^{}]*)\}\}/g, (_, f, m) => gf(f, m));
 const d20 = b => "1d20" + (b >= 0 ? "+" : "") + b;
 
 /* ---------- числа, которые страница считает сама ---------- */
@@ -570,7 +576,7 @@ function commonActions(){
       const s = skill(c.skill);
       extra = ` ${esc(s.name)} <b>${sg(skillB(s))}</b>${c.skill === "stealth" && armorDis ? ", в этом доспехе с помехой" : ""}.`;
     }
-    return `<div class="ca"><dt>${esc(c.name)}</dt><dd>${rich(c.plain)}${extra}</dd></div>`;
+    return `<div class="ca"><dt>${esc(c.name)}</dt><dd>${rich(tx(c, "plain"))}${extra}</dd></div>`;
   }).join("");
   return `<details class="common card"><summary><span>Ещё действия, доступные любому герою</span><span class="chev" aria-hidden="true"></span></summary><dl>${items}</dl></details>`;
 }
@@ -614,18 +620,18 @@ function panelStats(){
     const n = KB.skills.filter(s => s.ability === a).length;
     return `<button type="button" class="abil card" data-act="abil" data-a="${a}" aria-haspopup="dialog">
       <span class="an">${esc(m.name)}</span><span class="am">${sg(am(a))}</span>
-      <span class="ap">${esc(m.plain)}</span>
+      <span class="ap">${esc(tx(m, "plain"))}</span>
       <span class="ak">${n ? `${n} ${plural(n, "навык", "навыка", "навыков")} →` : "без навыков →"}</span>
     </button>`;
   }).join("");
   const mine = KB.skills.filter(s => hasSkill(s.id)).map(s =>
-    `<div class="row"><div><b>${esc(s.name)}${isExpert(s.id) ? " · эксперт" : ""}</b><p>${esc(s.plain)}</p></div><span class="val">${sg(skillB(s))}</span></div>`).join("");
+    `<div class="row"><div><b>${esc(s.name)}${isExpert(s.id) ? " · эксперт" : ""}</b><p>${esc(tx(s, "plain"))}</p></div><span class="val">${sg(skillB(s))}</span></div>`).join("");
   const rest = KB.skills.filter(s => !hasSkill(s.id)).map(s =>
     `<div class="os"><span>${esc(s.name)}<small>${ABBR[s.ability]}</small></span><b>${sg(skillB(s))}</b></div>`).join("");
 
   return `<section class="panel" id="p-stats" role="tabpanel" aria-labelledby="t-stats">
     <section class="sec">
-      <div class="sec-h"><h2>Характеристики</h2><p>Шесть чисел, из которых растёт всё остальное. Крупное — то, что прибавляешь к броску ${term("d20", "к20")}. Тапни, чтобы увидеть навыки.</p></div>
+      <div class="sec-h"><h2>Характеристики</h2><p>${T("Шесть чисел — ДНК твоего героя, из них растёт всё остальное.", "Шесть чисел — вся генетика твоего героя, уж какая досталась.")} Крупное — то, что прибавляешь к броску ${term("d20", "к20")}. Тапни, чтобы увидеть навыки.</p></div>
       <div class="abils">${abil}</div>
     </section>
     <section class="sec">
@@ -653,7 +659,7 @@ function panelCombat(){
     ? `<div class="hp-bar" id="hpBar" style="--n:${CH.hp.max}">${Array.from({ length: CH.hp.max }, (_, i) =>
         `<button type="button" data-act="hpset" data-i="${i + 1}" aria-label="Выставить ${i + 1} хитов"></button>`).join("")}</div>`
     : `<div class="hp-meter" id="hpBar" data-act="hpmeter" role="slider" aria-label="Хиты" aria-valuemin="0" aria-valuemax="${CH.hp.max}"><i id="hpFill"></i></div>`;
-  const tips = (KB.tips || {})[CH.class.id];
+  const tips = ((adult() && KB.tips18) || KB.tips || {})[CH.class.id];
   return `<section class="panel" id="p-combat" role="tabpanel" aria-labelledby="t-combat">
     ${tips ? `<details class="tips card"><summary><span>Как играть: ${esc(CH.class.name.toLowerCase())}</span><span class="chev" aria-hidden="true"></span></summary>
       <ol>${tips.map(t => `<li>${esc(t)}</li>`).join("")}</ol></details>` : ""}
@@ -671,12 +677,12 @@ function panelCombat(){
       </div>
       <div class="conds" id="conds"></div>
       <div class="stats2">
-        <div class="tile card"><span class="tl">${term("ac", "Класс доспеха")}</span><span class="tv">${CH.ac.value}</span><span class="ts">Врагу нужно ${CH.ac.value} или больше, чтобы попасть</span></div>
-        <div class="tile card"><span class="tl">${term("initiative", "Инициатива")}</span><span class="tv">${sg(initB())}</span><span class="ts">В начале боя брось к20 и прибавь</span></div>
+        <div class="tile card"><span class="tl">${term("ac", "Класс доспеха")}</span><span class="tv">${CH.ac.value}</span><span class="ts">${T(`Врагу надо выбросить ${CH.ac.value}+, чтобы до тебя достать`, `Чтобы тебя отпиздить, врагу надо ${CH.ac.value}+`)}</span></div>
+        <div class="tile card"><span class="tl">${term("initiative", "Инициатива")}</span><span class="tv">${sg(initB())}</span><span class="ts">${T("Кто быстрее в драке: к20 плюс это", "Кто первым раздаёт: к20 плюс это")}</span></div>
       </div>
       ${magicBlock()}
     </section>
-    <div class="sec-h turn-h"><h2>Твой ход</h2><p>Тапни «Действие» или «Бонусное» и выбери, что делаешь. Выбранное гаснет до нового хода.</p></div>
+    <div class="sec-h turn-h"><h2>Твой ход</h2><p>${T("Тапни «Действие» или «Бонусное» и выбери, что творишь.", "Тапни «Действие» или «Бонусное» и выбери, чем въебать.")} Потраченное гаснет до нового хода.</p></div>
     <div class="turnbar">
       <button type="button" class="tok" data-kind="action" data-act="slot" data-slot="action" aria-haspopup="dialog">
         <i aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M14.5 17.5 3 6V3h3l11.5 11.5"/><path d="M13 19l6-6"/><path d="M16 16l4 4"/><path d="M19 21l2-2"/><path d="M14.5 6.5 18 3h3v3l-3.5 3.5"/><path d="M5 14l4 4"/><path d="M7 17l-3 3"/><path d="M3 19l2 2"/></svg></i><span>Действие</span>
@@ -703,8 +709,8 @@ function magicBlock(){
   const ABN = { str: "Силу", dex: "Ловкость", con: "Телосложение", int: "Интеллект", wis: "Мудрость", cha: "Харизму" };
   const levels = slotLevels();
   return `<div class="stats2">
-      <div class="tile card"><span class="tl">${term("spell-attack", "Атака заклинанием")}</span><span class="tv">${sg(sc.attack)}</span><span class="ts">Прибавляй к к20, когда заклинание просит попасть</span></div>
-      <div class="tile card"><span class="tl">${term("spell-dc", "Сложность спасброска")}</span><span class="tv">${sc.dc}</span><span class="ts">Враг спасается, если выбросит ${sc.dc} или больше</span></div>
+      <div class="tile card"><span class="tl">${term("spell-attack", "Атака заклинанием")}</span><span class="tv">${sg(sc.attack)}</span><span class="ts">${T("Плюсуй к к20, когда швыряешь магию во врага", "Плюсуй к к20, когда хуяришь магией во врага")}</span></div>
+      <div class="tile card"><span class="tl">${term("spell-dc", "Сложность спасброска")}</span><span class="tv">${sc.dc}</span><span class="ts">${T(`Враг увернётся, только если выбросит ${sc.dc}+`, `Враг отмажется, только если выбросит ${sc.dc}+`)}</span></div>
     </div>
     ${levels.length ? `<div class="card slots">
       <p class="slots-h">${term("spell-slot", "Ячейки заклинаний")} <span>вернутся после ${sc.recharge === "short" ? "короткого" : "длинного"} отдыха</span></p>
@@ -741,11 +747,11 @@ function renderAbil(a){
     `<div class="sk-row${mine ? " mine" : ""}"><div><b>${esc(name)}</b>${plain ? `<p>${esc(plain)}</p>` : ""}</div><span class="val">${sg(val)}</span></div>`;
   $("#drTitle").textContent = m.name;
   $("#drBody").innerHTML = `
-    <p>${esc(cap(m.plain))}.</p>
+    <p>${esc(cap(tx(m, "plain")))}.</p>
     <h4 class="dr-sub">Навыки</h4>
     ${skills.length
-      ? `<div class="sk">${skills.map(s => row(s.name, s.plain, skillB(s), hasSkill(s.id))).join("")}</div>`
-      : `<p class="meta">${esc(m.note || "У этой характеристики нет навыков.")}</p>`}
+      ? `<div class="sk">${skills.map(s => row(s.name, tx(s, "plain"), skillB(s), hasSkill(s.id))).join("")}</div>`
+      : `<p class="meta">${esc(tx(m, "note") || "У этой характеристики нет навыков.")}</p>`}
     <h4 class="dr-sub">Спасбросок</h4>
     <div class="sk">${row("Спасбросок: " + m.name, "", saveB(a), CH.saves.includes(a))}</div>
     ${skills.some(s => hasSkill(s.id)) || CH.saves.includes(a)
@@ -756,7 +762,7 @@ function renderAbil(a){
 function renderDict(){
   $("#drTitle").textContent = "Словарик";
   $("#drBody").innerHTML = `<p class="meta">Подчёркнутые слова на странице открывают эти же объяснения по одному.</p>
-    <div>${Object.values(KB.glossary).map(g => `<div class="dict-item"><h4>${esc(g.title)}</h4><p>${esc(plainText(g.text))}</p></div>`).join("")}</div>`;
+    <div>${Object.values(KB.glossary).map(g => `<div class="dict-item"><h4>${esc(g.title)}</h4><p>${esc(plainText(tx(g, "text")))}</p></div>`).join("")}</div>`;
 }
 
 /* Подсказка при первом входе: три шага, чтобы не потеряться */
@@ -771,9 +777,9 @@ function hello(){
   return `<section class="hello card" id="hello">
     <h3>Как пользоваться листом</h3>
     <ol>
-      <li>Подчёркнутые слова объясняют себя — тапни любое.</li>
-      <li>В бою открой «Боевку»: «Действие» и «Бонусное» покажут, что можно сделать в свой ход.</li>
-      <li>Хиты, потраченные способности и заметки запоминаются на этом телефоне.</li>
+      <li>${T("Подчёркнутые слова — это подсказки, тапни любое, не стесняйся.", "Подчёркнутые слова объясняют себя — тыкай, не стесняйся.")}</li>
+      <li>${T("В бою открой «Боевку»: «Действие» и «Бонусное» покажут, что можно сделать прямо сейчас.", "В бою жми «Боевку»: «Действие» и «Бонусное» покажут, чем въебать прямо сейчас.")}</li>
+      <li>${T("Хиты, потраченное и заметки запоминаются на этом телефоне — жми смело.", "Хиты, потраченное и заметки запоминаются на этом телефоне — жми смело, нихуя не сломаешь.")}</li>
     </ol>
     <button type="button" class="btn primary" data-act="helloDone">Понятно</button>
   </section>`;
@@ -792,7 +798,7 @@ function render(){
       </div>
     </div>
     <div class="who">
-      <p class="eyebrow">${esc(CH.race.name)} · ${esc(CH.class.name)} ${CH.class.level} уровня</p>
+      <p class="eyebrow">${esc(CH.race.name)} · ${esc(CH.class.name)} ${CH.class.level} уровня${adult() ? ` <span class="r18" title="Мастер включил подсказки с матом">18+</span>` : ""}</p>
       <h1>${esc(CH.name)}</h1>
       ${CH.pitch ? `<p class="pitch">${rich(CH.pitch)}</p>` : ""}
       ${CH.background?.name ? `<p class="bgline">Прошлое: ${esc(CH.background.name)}${CH.background.note ? ", " + esc(CH.background.note) : ""}</p>` : ""}
@@ -964,7 +970,7 @@ function openTerm(k){
   if (!g) return;
   drawerMode = "term";
   $("#drTitle").textContent = g.title;
-  $("#drBody").innerHTML = `<p>${rich(g.text)}</p>`;
+  $("#drBody").innerHTML = `<p>${rich(tx(g, "text"))}</p>`;
   openDrawer();
 }
 /* Шторка отдыха: сначала объяснение и что вернётся, потом кнопка «отдохнуть».
@@ -982,12 +988,15 @@ function renderRest(kind){
     const spent = slotLevels().some(l => slotLeft(l) < slotMax(l));
     rows.push(retRow("Ячейки заклинаний", spent ? "вернутся" : "уже готовы", spent));
   }
-  if (!isS) rows.push(retRow("Кость хитов", S.hitDiceUsed > 0 ? "вернётся" : "уже на месте", S.hitDiceUsed > 0));
+  if (!isS){
+    const back = Math.min(S.hitDiceUsed, Math.max(1, Math.floor(CH.hitDice.count / 2)));
+    rows.push(retRow("Кости хитов", S.hitDiceUsed > 0 ? (back < S.hitDiceUsed ? `вернётся ${back} из ${S.hitDiceUsed}` : "вернутся") : "уже на месте", S.hitDiceUsed > 0));
+  }
 
   $("#drTitle").textContent = isS ? "Короткий отдых" : "Длинный отдых";
   let html = `<p>${isS
-    ? "Около часа передышки: перевязать раны, перекусить, перевести дух. Группа говорит мастеру, что отдыхает."
-    : "Ночёвка, не меньше 8 часов. Постоять в карауле можно, а если ночью случится бой, отдых прерывается."}</p>
+    ? T("Час передышки: перевязать раны, сжевать сухарь, перевести дух. Скажи мастеру, что отряд отдыхает.", "Час, чтобы перевести дух и перестать ныть. Скажи мастеру, что отряд отдыхает.")
+    : T("Ночёвка от 8 часов. Покараулить можно, но если ночью начнётся драка — отдых сорван.", "Ночёвка от 8 часов. Покараулить можно, но если ночью прибегут пиздить — отдых сорван.")}</p>
     <h4 class="dr-sub">Что вернётся</h4><div class="ret">${rows.join("")}</div>`;
 
   if (isS){
@@ -1063,7 +1072,7 @@ function renderSlot(slot){
   if (isA){
     html += `${feats.length ? `<h4 class="dr-sub">Твои атаки и умения</h4><div class="opts">${feats.map(f => optFeature(f, slot)).join("")}</div>` : ""}${spellsHtml}
       <h4 class="dr-sub">Что ещё можно</h4><div class="opts">${KB.commonActions.map((c, i) =>
-        `<button type="button" class="opt" data-act="pick" data-slot="action" data-ca="${i}"><span class="opt-n">${esc(c.name)}</span><span class="opt-d">${esc(plainText(c.plain))}</span></button>`).join("")}</div>`;
+        `<button type="button" class="opt" data-act="pick" data-slot="action" data-ca="${i}"><span class="opt-n">${esc(c.name)}</span><span class="opt-d">${esc(plainText(tx(c, "plain")))}</span></button>`).join("")}</div>`;
   } else {
     html += feats.length || spells.length
       ? `${feats.length ? `<div class="opts">${feats.map(f => optFeature(f, slot)).join("")}</div>` : ""}${spellsHtml}`
@@ -1160,7 +1169,7 @@ const H = {
     if (b.dataset.ca !== undefined){
       const c = KB.commonActions[+b.dataset.ca];
       S.turn[slot] = { name: c.name };
-      toast(`${c.name}. ${plainText(c.plain)}`);
+      toast(`${c.name}. ${plainText(tx(c, "plain"))}`);
     } else if (b.dataset.spell){
       const sp = spellById(b.dataset.spell);
       let l = 0;
@@ -1222,10 +1231,11 @@ const H = {
   },
   restLong: () => {
     snap();
-    S.hp = CH.hp.max; S.used = {}; S.slots = {}; S.hitDiceUsed = 0; S.turn = freshTurn();
+    S.hp = CH.hp.max; S.used = {}; S.slots = {}; S.turn = freshTurn();
+    S.hitDiceUsed = Math.max(0, S.hitDiceUsed - Math.max(1, Math.floor(CH.hitDice.count / 2)));
     S.temp = 0; S.conc = null; S.death = { s: 0, f: 0 }; S.round = 1;
     drawer.close();
-    toast(`Длинный отдых. Хиты полные, способности${slotLevels().length ? ", ячейки" : ""} и кость хитов вернулись.`, true);
+    toast(`Длинный отдых. Хиты полные, способности${slotLevels().length ? " и ячейки" : ""} вернулись${S.hitDiceUsed ? `, костей хитов пока ${hdLeft()} из ${CH.hitDice.count}` : ", кости хитов тоже"}.`, true);
   },
   undo: () => {
     if (!snapshot) return;

@@ -20,7 +20,7 @@ let confirmDel = null;  // id персонажа, которого спраши�
 let busy = false;       // идёт запрос — кнопки на это время гаснут
 let authKnown = false;  // Supabase уже сказал, вошёл ли мастер: до этого держим «Открываем мастерскую…», чтобы не мигал экран гостя
 // Для списка не тянем лист целиком: только имя расы и класс. Бесплатный трафик Supabase — 5 ГБ в месяц.
-const LIST_COLS = "id,name,share_slug,created_at,updated_at,race:data->race->>name,cls:data->class,app:data->source->>app";
+const LIST_COLS = "id,name,share_slug,created_at,updated_at,race:data->race->>name,cls:data->class,app:data->source->>app,tone:data->>tone";
 let profileMode = false; // профиль мастера: статистика и выход
 const TAB_KEY = "novice-sheet:tab";
 let tab = (() => { try { return localStorage.getItem(TAB_KEY) === "tables" ? "tables" : "chars"; } catch (e) { return "chars"; } })();
@@ -115,10 +115,11 @@ function charCard(c){
            ? `<button type="button" class="linkbtn" data-act="edit" data-id="${c.id}">Изменить</button><button type="button" class="linkbtn" data-act="editManual" data-id="${c.id}">Вручную</button>`
            : `<button type="button" class="linkbtn" data-act="editManual" data-id="${c.id}">Изменить</button>`}
          <button type="button" class="linkbtn" data-act="dup" data-id="${c.id}"${busy ? " disabled" : ""}>Сделать копию</button>
+         <button type="button" class="linkbtn" data-act="tone" data-id="${c.id}"${busy ? " disabled" : ""} title="Подсказки в листе с матом — для взрослых столов">${c.tone === "18" ? "Убрать мат из подсказок" : "Мат в подсказках"}</button>
          <button type="button" class="linkbtn muted" data-act="askDel" data-id="${c.id}">Удалить</button>
        </div>`;
   return `<article class="char card" data-name="${esc(String(c.name).toLowerCase())}">
-    <div class="char-h"><h3>${esc(c.name)}</h3><time datetime="${esc(c.updated_at)}">${when(c.updated_at)}</time></div>
+    <div class="char-h"><h3>${esc(c.name)}${c.tone === "18" ? ` <span class="r18" title="Подсказки в листе с матом">18+</span>` : ""}</h3><time datetime="${esc(c.updated_at)}">${when(c.updated_at)}</time></div>
     ${sub ? `<p class="char-sub">${esc(sub)}</p>` : ""}
     ${seatLine(c)}
     <div class="char-link">${esc(shareLink(c))}</div>
@@ -439,6 +440,8 @@ async function loadChars(){
 async function saveCharacter(c, editId){
   const size = new TextEncoder().encode(JSON.stringify(c)).length;
   if (size > 150000){ toast("Персонаж слишком большой для бесплатной базы."); return false; }
+  // Тон подсказок мастер выбирает отдельно — пересборка листа его не сбрасывает
+  if (editId){ const prev = chars.find(x => x.id === editId); if (prev && prev.tone === "18" && !c.tone) c.tone = "18"; }
   busy = true; render();
   const q = editId
     ? sb.from("characters").update({ name: c.name, data: c }).eq("id", editId)
@@ -521,6 +524,22 @@ const H = {
     render();
   },
   tab: b => { leaveSubviews(); setTab(b.dataset.v); render(); },
+  tone: async b => {
+    if (busy) return;
+    const id = b.dataset.id, c = chars.find(x => x.id === id);
+    const full = await loadFull(id);
+    if (!full || !c) return;
+    const on = full.data.tone !== "18";
+    const data = { ...full.data };
+    if (on) data.tone = "18"; else delete data.tone;
+    busy = true; render();
+    const { error: e } = await sb.from("characters").update({ data }).eq("id", id);
+    busy = false;
+    if (e){ console.error(e); toast("Не получилось поменять подсказки. Попробуй ещё раз."); render(); return; }
+    c.tone = on ? "18" : null;
+    toast(on ? `У «${c.name}» подсказки теперь с матом. Игрок увидит их, когда обновит лист.` : `У «${c.name}» подсказки снова без мата.`);
+    render();
+  },
   openFeedback: () => openFeedback(),
   fbClose: () => { const t = document.getElementById("fbText"); if (t) t.value = ""; fbShot = null; document.getElementById("fbDlg")?.close(); },
   fbShotDel: () => { fbShot = null; fbShotView(); },
